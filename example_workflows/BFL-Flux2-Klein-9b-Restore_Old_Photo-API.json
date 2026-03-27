@@ -1,0 +1,58 @@
+{
+  "23": {
+    "inputs": {
+      "filename_prefix": "Replicate-BFL-Flux-2-Klein-9b",
+      "images": [
+        "57",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "57": {
+    "inputs": {
+      "dry_run": false,
+      "force_rerun": false,
+      "prompt": [
+        "58",
+        0
+      ],
+      "aspect_ratio": "match_input_image",
+      "megapixels": "2",
+      "seed": 1036,
+      "go_fast": true,
+      "output_format": "png",
+      "output_quality": 95,
+      "disable_safety_checker": false,
+      "IMAGE_1": [
+        "60",
+        0
+      ]
+    },
+    "class_type": "Replicate black-forest-labs/flux-2-klein-9b",
+    "_meta": {
+      "title": "Replicate black-forest-labs/flux-2-klein-9b"
+    }
+  },
+  "58": {
+    "inputs": {
+      "value": "**Photo Restoration & Enhancement Directives**\n\n1. **Targeted Reconstruction of Damaged Areas**\nIdentify and restore *only* the missing, torn, faded, or corrupted regions of the image. Each reconstructed area must be seamlessly inpainted to reflect the original scene's context — matching grain structure, tonal range, lighting direction, and period-accurate detail. Do not alter, retouch, or reinterpret any intact portions of the photograph.\n\n2. **Full-Spectrum Technical Enhancement**\nApply a professional post-processing pipeline to the entire image:\n   - **De-blur & De-noise** — Recover lost sharpness and suppress digital or analog noise while preserving underlying detail\n   - **Histogram Equalization** — Redistribute tonal values to restore dynamic range and correct exposure imbalances\n   - **Unsharp Masking** — Apply precision edge accentuation to recover perceived clarity without introducing haloing artifacts\n   - **White Balance Correction** — Neutralize colour casts introduced by age, chemical degradation, or improper scanning\n   - **Colour Grading** — Restore a natural, balanced colour palette consistent with the original lighting environment\n   - **Micro-contrast Enhancement** — Lift local midtone contrast to restore three-dimensionality and tactile depth\n   - **Lens Distortion Correction** — Rectify barrel, pincushion, or chromatic aberration artefacts introduced at capture or during digitisation\n\n3. **Modern Digital Output Standard**\nThe final deliverable must present as clean, sharp, and natural — indistinguishable in quality from a contemporary professional digital photograph. Eliminate all visual indicators of age, damage, or degradation while honouring the integrity of the original composition.\n\n4. **Facial Feature Preservation**\nExercise the highest degree of care around all facial regions. Retain the precise likeness, bone structure, skin texture, and expression of every individual depicted. Under no circumstances should facial features be smoothed, idealised, reconstructed speculatively, or altered in any way that compromises subject identity."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline)"
+    }
+  },
+  "60": {
+    "inputs": {
+      "image": "img0021.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  }
+}

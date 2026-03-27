@@ -1,0 +1,252 @@
+# Global output mapping configuration for ComfyUI-API-DockerCPU
+# This file defines API-specific output patterns for auto-detecting
+# and configuring outputs when custom nodes are initially loaded.
+#
+# These patterns are used as defaults when no model-specific override exists.
+# Per-model overrides should be defined in supported_models.yaml or model_overrides.yaml.
+
+version: "1.0"
+description: "Global output patterns by API provider"
+
+# ============================================
+# Replicate API Output Patterns
+# ============================================
+# Replicate uses simple "Output" schema with either:
+# - string (format: uri) for single media
+# - array of string (format: uri) for multiple media
+# ============================================
+
+replicate_api:
+  description: "Models from Replicate.com"
+  
+  output_patterns:
+    
+    # Pattern: Single image URL
+    # Example: google/nano-banana, sczhou/codeformer
+    image_single:
+      schema_match:
+        name: "Output"
+        type: string
+        format: uri
+      inferred_type: IMAGE
+      default_alias: "IMAGE"
+      description: "Single image output (URL)"
+    
+    # Pattern: Multiple image URLs
+    # Example: black-forest-labs/flux-2-klein-9b
+    image_multiple:
+      schema_match:
+        name: "Output"
+        type: array
+        items_type: string
+        items_format: uri
+      inferred_type: IMAGE
+      default_alias: "IMAGES"
+      description: "Multiple image outputs (URL array)"
+    
+    # Pattern: Audio URL
+    # Example: zsxkib/realistic-voice-cloning
+    audio_single:
+      schema_match:
+        name: "Output"
+        type: string
+        format: uri
+        # Detected by example output extension
+        example_extensions:
+          - .mp3
+          - .wav
+          - .flac
+          - .m4a
+          - .mpga
+      inferred_type: AUDIO
+      default_alias: "AUDIO"
+      description: "Single audio output (URL)"
+    
+    # Pattern: Video URL
+    # Example: video generation models
+    video_single:
+      schema_match:
+        name: "Output"
+        type: string
+        format: uri
+        example_extensions:
+          - .mp4
+          - .webm
+          - .mov
+          - .mkv
+          - .mpeg
+      inferred_type: VIDEO
+      default_alias: "VIDEO"
+      description: "Single video output (URL)"
+    
+    # Pattern: Multiple videos
+    video_multiple:
+      schema_match:
+        name: "Output"
+        type: array
+        items_type: string
+        items_format: uri
+        # Check item examples for video extensions
+      inferred_type: VIDEO
+      default_alias: "VIDEOS"
+      description: "Multiple video outputs (URL array)"
+
+# ============================================
+# FalAi API Output Patterns
+# ============================================
+# FalAi uses structured Output objects with multiple fields:
+# - Media fields: image, images, video, audio (exposed as outputs)
+# - Metadata fields: seed, timings, prompt (not exposed as outputs)
+# ============================================
+
+fal_ai_api:
+  description: "Models from Fal.ai"
+  
+  output_patterns:
+    
+    # Pattern: Single image (ImageFile object)
+    # Example: fal-ai/seedvr/upscale/image
+    image_single_file:
+      field_match:
+        name: "image"
+        type: object
+        ref_contains: "ImageFile"
+      inferred_type: IMAGE
+      default_alias: "IMAGE"
+      extract_url_from: "url"
+      description: "Single image output (ImageFile object)"
+      expose_field: true
+    
+    # Pattern: Multiple images (ImageFile array)
+    # Example: fal-ai/flux-2/klein/9b/edit
+    image_multiple_file:
+      field_match:
+        name: "images"
+        type: array
+        items_ref_contains: "ImageFile"
+      inferred_type: IMAGE
+      default_alias: "IMAGES"
+      extract_url_from: "url"
+      description: "Multiple image outputs (ImageFile array)"
+      expose_field: true
+    
+    # Pattern: Video output
+    video_single_file:
+      field_match:
+        name: "video"
+        type: object
+        ref_contains: "VideoFile"
+      inferred_type: VIDEO
+      default_alias: "VIDEO"
+      extract_url_from: "url"
+      description: "Single video output (VideoFile object)"
+      expose_field: true
+    
+    # Pattern: Audio output
+    audio_single_file:
+      field_match:
+        name: "audio"
+        type: object
+        ref_contains: "AudioFile"
+      inferred_type: AUDIO
+      default_alias: "AUDIO"
+      extract_url_from: "url"
+      description: "Single audio output (AudioFile object)"
+      expose_field: true
+  
+  # Fields that should NOT be exposed as ComfyUI outputs
+  # These are API response metadata, not primary outputs
+  exclude_fields:
+    - seed
+    - timings
+    - prompt
+    - has_nsfw_concepts
+    - request_id
+    - status
+
+# ============================================
+# HuggingFace API Output Patterns
+# ============================================
+# HuggingFace schemas are model repository metadata,
+# not API response schemas. Output types are determined
+# by model type tags (text-to-image, text-to-speech, etc.)
+# ============================================
+
+huggingface_api:
+  description: "Models from HuggingFace.co"
+  
+  output_patterns:
+    
+    # Pattern: Text-to-image models
+    text_to_image:
+      model_tags:
+        - "text-to-image"
+        - "image-generation"
+      inferred_type: IMAGE
+      default_alias: "IMAGE"
+      description: "Text-to-image model output"
+    
+    # Pattern: Image-to-image models
+    image_to_image:
+      model_tags:
+        - "image-to-image"
+        - "image-to-image-translation"
+      inferred_type: IMAGE
+      default_alias: "IMAGE"
+      description: "Image-to-image model output"
+    
+    # Pattern: Image upscaling
+    image_upscaling:
+      model_tags:
+        - "image-upscaling"
+        - "image-to-image"
+      inferred_type: IMAGE
+      default_alias: "IMAGE"
+      description: "Image upscaling model output"
+    
+    # Pattern: Text-to-speech
+    text_to_speech:
+      model_tags:
+        - "text-to-speech"
+        - "tts"
+      inferred_type: AUDIO
+      default_alias: "AUDIO"
+      description: "Text-to-speech model output"
+    
+    # Pattern: Automatic speech recognition
+    speech_to_text:
+      model_tags:
+        - "automatic-speech-recognition"
+        - "speech-to-text"
+        - "asr"
+      inferred_type: STRING
+      default_alias: "TRANSCRIPTION"
+      description: "Speech recognition output"
+    
+    # Pattern: Text-to-video
+    text_to_video:
+      model_tags:
+        - "text-to-video"
+        - "video-generation"
+      inferred_type: VIDEO
+      default_alias: "VIDEO"
+      description: "Text-to-video model output"
+
+# ============================================
+# Supported ComfyUI Output Types
+# ============================================
+# These are the valid output types that can be used
+# when defining outputs. Types not in this list will
+# be rejected with a validation error.
+# 
+# Note: This is an API-based tool, so only media and string types
+# are needed. Model types (LATENT, CONDITIONING, MODEL, CLIP, VAE)
+# are not applicable for API outputs.
+# ============================================
+
+supported_types:
+  - IMAGE
+  - AUDIO
+  - VIDEO
+  - STRING
+  - MASK

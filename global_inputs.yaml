@@ -1,0 +1,190 @@
+# Global INPUT definitions for ComfyUI-API-DockerCPU
+# INPUTS are media fields that can be linked from other nodes (IMAGE, VIDEO, AUDIO).
+# These are optional links - users can either connect from another node OR leave unconnected.
+#
+# ComfyUI determines if a PARAMETER can be linked to an INPUT.
+# This file only defines the media INPUTS that can be connected.
+
+version: "1.0"
+description: "Global INPUT patterns by API provider - media fields only"
+
+# ============================================
+# Replicate API INPUT Patterns
+# ============================================
+# Replicate uses simple Input schema with field-based type detection.
+# Field names indicate the expected media type.
+# ============================================
+
+replicate_api:
+  description: "Models from Replicate.com"
+  
+  inputs:
+    
+    # ----------------------------------------
+    # Image Inputs
+    # ----------------------------------------
+    
+    # Pattern: Image input (array of URLs) - can connect multiple images
+    image_input_array:
+      field_match:
+        name_patterns:
+          - "image_input"
+          - "images"
+          - "input_images"
+        type: array
+        items_type: string
+        items_format: uri
+      comfyui_type: IMAGE
+      alias: "IMAGE"
+      alias_array_suffix: "_1"
+      is_array: true
+      required: false
+      description: "Image input (multiple URLs) - connect from LoadImage node"
+    
+    # Pattern: Single image input
+    image_input_single:
+      field_match:
+        name_patterns:
+          - "image"
+          - "input_image"
+          - "img"
+        type: string
+        format: uri
+      comfyui_type: IMAGE
+      alias: "IMAGE"
+      is_array: false
+      required: false
+      description: "Single image input - connect from LoadImage node"
+    
+    # ----------------------------------------
+    # Audio Inputs
+    # ----------------------------------------
+    
+    # Pattern: Audio input (URL)
+    audio_input:
+      field_match:
+        name_patterns:
+          - "song_input"
+          - "audio_input"
+          - "audio"
+          - "voice_input"
+        type: string
+        format: uri
+      comfyui_type: AUDIO
+      alias: "AUDIO"
+      is_array: false
+      required: false
+      description: "Audio input - connect from Audio node"
+    
+    # ----------------------------------------
+    # Video Inputs
+    # ----------------------------------------
+    
+    # Pattern: Video input (URL)
+    video_input:
+      field_match:
+        name_patterns:
+          - "video"
+          - "video_input"
+          - "media"
+          - "clip"
+        type: string
+        format: uri
+      comfyui_type: VIDEO
+      alias: "VIDEO"
+      is_array: false
+      required: false
+      description: "Video input - connect from Video node"
+
+# ============================================
+# FalAi API INPUT Patterns
+# ============================================
+# FalAi uses structured Input schemas with field-based detection.
+# ============================================
+
+fal_ai_api:
+  description: "Models from Fal.ai"
+  
+  inputs:
+    
+    # ----------------------------------------
+    # Image Inputs
+    # ----------------------------------------
+    
+    # Pattern: Single image URL
+    image_url_single:
+      field_match:
+        name_patterns:
+          - "image_url"
+          - "input_image_url"
+        type: string
+        description_contains: "image"
+      comfyui_type: IMAGE
+      alias: "IMAGE"
+      is_array: false
+      required: false
+      description: "Single image input URL - connect from LoadImage node"
+    
+    # Pattern: Multiple image URLs
+    image_url_array:
+      field_match:
+        name_patterns:
+          - "image_urls"
+          - "image_inputs"
+        type: array
+        items_type: string
+      comfyui_type: IMAGE
+      alias: "IMAGE"
+      alias_array_suffix: "_1"
+      is_array: true
+      required: false
+      description: "Multiple image inputs - connect from LoadImage node"
+    
+    # ----------------------------------------
+    # Video Inputs
+    # ----------------------------------------
+    
+    # Pattern: Video URL
+    video_url:
+      field_match:
+        name_patterns:
+          - "video_url"
+          - "input_video_url"
+        type: string
+        description_contains: "video"
+      comfyui_type: VIDEO
+      alias: "VIDEO"
+      is_array: false
+      required: false
+      description: "Video input - connect from Video node"
+    
+    # ----------------------------------------
+    # Audio Inputs
+    # ----------------------------------------
+    
+    # Pattern: Audio URL
+    audio_url:
+      field_match:
+        name_patterns:
+          - "audio_url"
+          - "input_audio_url"
+        type: string
+        description_contains: "audio"
+      comfyui_type: AUDIO
+      alias: "AUDIO"
+      is_array: false
+      required: false
+      description: "Audio input - connect from Audio node"
+
+# ============================================
+# HuggingFace API INPUT Patterns
+# ============================================
+# HuggingFace models have varying input structures.
+# ============================================
+
+huggingface_api:
+  description: "Models from HuggingFace.co"
+  
+  inputs:
+    # Note: HuggingFace schemas primarily contain model file references
+    # which are handled as parameters rather than media inputs

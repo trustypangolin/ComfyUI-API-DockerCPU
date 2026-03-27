@@ -1,0 +1,367 @@
+{
+    "url": "https://replicate.com/prunaai/z-image-turbo-lora",
+    "owner": "prunaai",
+    "name": "z-image-turbo-lora",
+    "description": "Lora version of Z-Image Turbo, which is a super fast text-to-image model of 6B parameters developed by Tongyi-MAI.",
+    "visibility": "public",
+    "github_url": null,
+    "paper_url": null,
+    "license_url": null,
+    "run_count": 161226,
+    "cover_image_url": "https://replicate.delivery/xezq/IW56hgDT0ALeMy9kyeyRmP1AYz8HmveVXafsLqtT2NiFMhetC/output_1281297989_0.jpeg",
+    "default_example": {
+        "id": "ajpwkj1tphrme0ctwtvvb2rp70",
+        "model": "prunaai/z-image-turbo-lora",
+        "version": "197b2db2015aa366d2bc61a941758adf4c31ac66b18573f5c66dc388ab081ca2",
+        "status": "succeeded",
+        "input": {
+            "width": 1024,
+            "height": 1024,
+            "prompt": "t3chnic4lly vibrant 1960s close-up of a woman sitting under a tree in a blue skit and white blouse, she has blonde wavy short hair and a smile with green eyes lake scene by a garden with flowers in the foreground  1960s styl;e film   She's holding her hand out there is a small smooth frog in her palm, she's making eye contact with the toad.",
+            "lora_scales": [
+                1
+            ],
+            "lora_weights": [
+                "https://huggingface.co/renderartist/Technically-Color-Z-Image-Turbo/resolve/main/Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors"
+            ],
+            "output_format": "jpg",
+            "guidance_scale": 0,
+            "output_quality": 80,
+            "num_inference_steps": 8
+        },
+        "output": [
+            "https://replicate.delivery/xezq/IW56hgDT0ALeMy9kyeyRmP1AYz8HmveVXafsLqtT2NiFMhetC/output_1281297989_0.jpeg"
+        ],
+        "logs": "Using cached processed LoRA for: https://huggingface.co/renderartist/Technically-Color-Z-Image-Turbo/resolve/main/Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors\nLoaded LoRA 1: https://huggingface.co/renderartist/Technically-Color-Z-Image-Turbo/resolve/main/Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors\nSet adapters: ['lora_0'] with weights: [1.0]\n  0%|          | 0/9 [00:00<?, ?it/s]\n 11%|█         | 1/9 [00:00<00:01,  4.42it/s]\n 22%|██▏       | 2/9 [00:00<00:01,  5.15it/s]\n 33%|███▎      | 3/9 [00:00<00:01,  4.79it/s]\n 44%|████▍     | 4/9 [00:00<00:01,  4.63it/s]\n 56%|█████▌    | 5/9 [00:01<00:00,  4.55it/s]\n 67%|██████▋   | 6/9 [00:01<00:00,  4.50it/s]\n 78%|███████▊  | 7/9 [00:01<00:00,  4.48it/s]\n 89%|████████▉ | 8/9 [00:01<00:00,  4.45it/s]\n100%|██████████| 9/9 [00:01<00:00,  4.44it/s]\n100%|██████████| 9/9 [00:01<00:00,  4.54it/s]",
+        "error": null,
+        "metrics": {
+            "predict_time": 2.388705017,
+            "total_time": 2.4011226949999998
+        },
+        "created_at": "2025-12-04T00:15:59.156000Z",
+        "started_at": "2025-12-04T00:15:59.168417Z",
+        "completed_at": "2025-12-04T00:16:01.557122Z",
+        "urls": {
+            "stream": "https://stream.replicate.com/v1/files/bcwr-tqvc73wkecbi36jyyh4fmc7mc6jl6sgdmgjdmiczal54d2y2mdaa",
+            "get": "https://api.replicate.com/v1/predictions/ajpwkj1tphrme0ctwtvvb2rp70",
+            "cancel": "https://api.replicate.com/v1/predictions/ajpwkj1tphrme0ctwtvvb2rp70/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "197b2db2015aa366d2bc61a941758adf4c31ac66b18573f5c66dc388ab081ca2",
+        "created_at": "2025-12-04T00:02:12.562158+00:00",
+        "cog_version": "0.16.9",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "prompt"
+                        ],
+                        "properties": {
+                            "seed": {
+                                "type": "integer",
+                                "title": "Seed",
+                                "x-order": 5,
+                                "nullable": true,
+                                "description": "Random seed. Set for reproducible generation"
+                            },
+                            "width": {
+                                "type": "integer",
+                                "title": "Width",
+                                "default": 1024,
+                                "maximum": 1440,
+                                "minimum": 64,
+                                "x-order": 2,
+                                "description": "Width of the generated image"
+                            },
+                            "height": {
+                                "type": "integer",
+                                "title": "Height",
+                                "default": 1024,
+                                "maximum": 1440,
+                                "minimum": 64,
+                                "x-order": 1,
+                                "description": "Height of the generated image"
+                            },
+                            "prompt": {
+                                "type": "string",
+                                "title": "Prompt",
+                                "x-order": 0,
+                                "description": "Text prompt for image generation"
+                            },
+                            "lora_scales": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "title": "Lora Scales",
+                                "x-order": 7,
+                                "nullable": true,
+                                "description": "Scales for each LoRA as an array of floats. Must match the number of lora_weights. Defaults to 1.0 for each if not provided."
+                            },
+                            "lora_weights": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Lora Weights",
+                                "x-order": 6,
+                                "nullable": true,
+                                "description": "LoRA weights as an array of URLs. Supports .safetensors URLs, tar files, and zip files (e.g., ['https://example.com/lora1.safetensors', 'https://example.com/lora2.safetensors'])"
+                            },
+                            "output_format": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/output_format"
+                                    }
+                                ],
+                                "default": "jpg",
+                                "x-order": 8,
+                                "description": "Format of the output images"
+                            },
+                            "guidance_scale": {
+                                "type": "number",
+                                "title": "Guidance Scale",
+                                "default": 0,
+                                "maximum": 20,
+                                "minimum": 0,
+                                "x-order": 4,
+                                "description": "Guidance scale. Should be 0 for Turbo models"
+                            },
+                            "output_quality": {
+                                "type": "integer",
+                                "title": "Output Quality",
+                                "default": 80,
+                                "maximum": 100,
+                                "minimum": 0,
+                                "x-order": 9,
+                                "description": "Quality when saving the output images, from 0 to 100. 100 is best quality, 0 is lowest quality. Not relevant for .png outputs"
+                            },
+                            "num_inference_steps": {
+                                "type": "integer",
+                                "title": "Num Inference Steps",
+                                "default": 8,
+                                "maximum": 50,
+                                "minimum": 1,
+                                "x-order": 3,
+                                "description": "Number of inference steps. This actually results in (num_inference_steps - 1) DiT forwards"
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "title": "Output"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "output_format": {
+                        "enum": [
+                            "png",
+                            "jpg",
+                            "webp"
+                        ],
+                        "type": "string",
+                        "title": "output_format",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "context": {
+                                "type": "object",
+                                "title": "Context",
+                                "nullable": true,
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "nullable": true,
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix",
+                                "nullable": true
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "start",
+                                    "output",
+                                    "logs",
+                                    "completed"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status",
+                                "nullable": true
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics",
+                                "nullable": true,
+                                "additionalProperties": true
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "repo_id": "renderartist/Technically-Color-Z-Image-Turbo",
+    "type": "huggingface_repo",
+    "repo_type": "model",
+    "models": [
+        {
+            "filename": "Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors",
+            "url": "https://huggingface.co/renderartist/Technically-Color-Z-Image-Turbo/resolve/main/Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors",
+            "path": "Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors"
+        }
+    ],
+    "metadata": {
+        "sha": "193838d6d10d552514d51105fa1c07e4a7bbd7e6",
+        "downloads": 1164,
+        "likes": 85,
+        "tags": [
+            "diffusers",
+            "text-to-image",
+            "lora",
+            "template:diffusion-lora",
+            "base_model:Tongyi-MAI/Z-Image-Turbo",
+            "base_model:adapter:Tongyi-MAI/Z-Image-Turbo",
+            "license:apache-2.0",
+            "region:us"
+        ]
+    },
+    "fetched_at": "2026-03-27T05:20:13.892988+00:00"
+}

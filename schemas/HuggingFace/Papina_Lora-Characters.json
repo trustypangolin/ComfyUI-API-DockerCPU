@@ -1,0 +1,26 @@
+{
+    "repo_id": "Papina/Lora-Characters",
+    "type": "huggingface_repo",
+    "repo_type": "model",
+    "models": [
+        {
+            "filename": "PredatorPrey-ZImage.safetensors",
+            "url": "https://huggingface.co/Papina/Lora-Characters/resolve/main/PredatorPrey-ZImage.safetensors",
+            "path": "PredatorPrey-ZImage.safetensors"
+        },
+        {
+            "filename": "benjamin50-ZImage.safetensors",
+            "url": "https://huggingface.co/Papina/Lora-Characters/resolve/main/benjamin50-ZImage.safetensors",
+            "path": "benjamin50-ZImage.safetensors"
+        }
+    ],
+    "metadata": {
+        "sha": "dbaa5b91506edeba8878daa29b0acb6eb74ea0ca",
+        "downloads": 0,
+        "likes": 0,
+        "tags": [
+            "region:us"
+        ]
+    },
+    "fetched_at": "2026-03-27T05:20:13.892988+00:00"
+}

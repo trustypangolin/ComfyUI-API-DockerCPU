@@ -1,0 +1,381 @@
+{
+    "url": "https://replicate.com/black-forest-labs/flux-2-klein-9b",
+    "owner": "black-forest-labs",
+    "name": "flux-2-klein-9b",
+    "description": "4 step distilled version of FLUX.2 [klein]. A foundation model for maximum flexibility and control",
+    "visibility": "public",
+    "github_url": null,
+    "paper_url": null,
+    "license_url": null,
+    "run_count": 486144,
+    "cover_image_url": "https://replicate.delivery/xezq/KOro9UrHuZZdPNTR7fy0FnwcCeu4zPkRceff9yOUkYulVj9vC/out.jpg",
+    "default_example": {
+        "id": "1pk55dy0tdrmw0cvw6wbjqjmv8",
+        "model": "black-forest-labs/flux-2-klein-9b",
+        "version": "hidden",
+        "status": "succeeded",
+        "input": {
+            "images": [],
+            "prompt": "A surreal underwater or cosmic garden scene with bioluminescent flora against a deep navy blue to black background. Delicate, feather-like structures in pale icy blue and white emerge from the left side, resembling ethereal ferns or coral fronds with intricate fractal patterns. These luminous fronds transition into a cloud-like dispersal of particles and spores floating through the dark space, creating a dreamy, ethereal atmosphere. On the right side, dense clusters of vegetation in deep greens, blues, and purple-pink tones form an organic canopy. The foliage includes pine-like needles, flowering bushes in blue and magenta hues, and various plant forms creating depth and texture. Small glowing particles and orbs of light are scattered throughout the scene like floating pollen or bioluminescent plankton. The overall composition creates a mystical, otherworldly environment that blends elements of deep sea bioluminescence with alien botanical landscapes. Cinematic lighting with cool color palette dominated by blues, teals, and deep greens. Photorealistic rendering with soft focus effects and atmospheric depth. With large white text in the center: \"FLUX.2 [klein] 9B\"",
+            "go_fast": true,
+            "megapixels": "1",
+            "aspect_ratio": "1:1",
+            "output_format": "jpg",
+            "output_quality": 95
+        },
+        "output": [
+            "https://replicate.delivery/xezq/KOro9UrHuZZdPNTR7fy0FnwcCeu4zPkRceff9yOUkYulVj9vC/out.jpg"
+        ],
+        "logs": "Using seed: 1303830516\nGenerating 1024x1024 image (1.00 MP, 1:1) ...\nGeneration took 0.44s",
+        "error": null,
+        "metrics": {
+            "predict_time": 0.68373497,
+            "total_time": 0.694676192
+        },
+        "created_at": "2026-01-21T18:02:20.243000Z",
+        "started_at": "2026-01-21T18:02:20.253941Z",
+        "completed_at": "2026-01-21T18:02:20.937676Z",
+        "urls": {
+            "stream": "https://stream.replicate.com/v1/files/jbxs-4hnxswplhqsndyrngcuexymw46rezbay6gaenbdfuxa55gavecfa",
+            "get": "https://api.replicate.com/v1/predictions/1pk55dy0tdrmw0cvw6wbjqjmv8",
+            "cancel": "https://api.replicate.com/v1/predictions/1pk55dy0tdrmw0cvw6wbjqjmv8/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "963f7b2c4aa2bc7e6377b95759dcf3a21cf175f6e8b0d8c1efe7bf6c8a23b690",
+        "created_at": "2026-01-21T18:05:25.325860+00:00",
+        "cog_version": "0.16.9",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "prompt"
+                        ],
+                        "properties": {
+                            "seed": {
+                                "type": "integer",
+                                "title": "Seed",
+                                "x-order": 4,
+                                "nullable": true,
+                                "description": "Random seed. Set for reproducible generation"
+                            },
+                            "images": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "format": "uri"
+                                },
+                                "title": "Images",
+                                "default": [],
+                                "x-order": 1,
+                                "description": "List of input images for image-to-image generation. Maximum 5 images. Must be jpeg, png, gif, or webp."
+                            },
+                            "prompt": {
+                                "type": "string",
+                                "title": "Prompt",
+                                "x-order": 0,
+                                "description": "Text prompt for image generation."
+                            },
+                            "go_fast": {
+                                "type": "boolean",
+                                "title": "Go Fast",
+                                "default": true,
+                                "x-order": 5,
+                                "description": "Run faster predictions with additional optimizations."
+                            },
+                            "megapixels": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/megapixels"
+                                    }
+                                ],
+                                "default": "1",
+                                "x-order": 3,
+                                "description": "Resolution in megapixels"
+                            },
+                            "aspect_ratio": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/aspect_ratio"
+                                    }
+                                ],
+                                "default": "1:1",
+                                "x-order": 2,
+                                "description": "Aspect ratio for the generated image. Use 'match_input_image' to match the aspect ratio of the first input image."
+                            },
+                            "output_format": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/output_format"
+                                    }
+                                ],
+                                "default": "jpg",
+                                "x-order": 6,
+                                "description": "Format of the output images"
+                            },
+                            "output_quality": {
+                                "type": "integer",
+                                "title": "Output Quality",
+                                "default": 95,
+                                "maximum": 100,
+                                "minimum": 0,
+                                "x-order": 7,
+                                "description": "Quality when saving the output images, from 0 to 100. 100 is best quality, 0 is lowest quality. Not relevant for .png outputs."
+                            },
+                            "disable_safety_checker": {
+                                "type": "boolean",
+                                "title": "Disable Safety Checker",
+                                "default": false,
+                                "x-order": 8,
+                                "description": "Disable safety checker for generated images."
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "title": "Output"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "megapixels": {
+                        "enum": [
+                            "0.25",
+                            "0.5",
+                            "1",
+                            "2",
+                            "4"
+                        ],
+                        "type": "string",
+                        "title": "megapixels",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "aspect_ratio": {
+                        "enum": [
+                            "1:1",
+                            "16:9",
+                            "9:16",
+                            "3:2",
+                            "2:3",
+                            "4:3",
+                            "3:4",
+                            "5:4",
+                            "4:5",
+                            "21:9",
+                            "9:21",
+                            "match_input_image"
+                        ],
+                        "type": "string",
+                        "title": "aspect_ratio",
+                        "description": "An enumeration."
+                    },
+                    "output_format": {
+                        "enum": [
+                            "webp",
+                            "jpg",
+                            "png"
+                        ],
+                        "type": "string",
+                        "title": "output_format",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "context": {
+                                "type": "object",
+                                "title": "Context",
+                                "nullable": true,
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "nullable": true,
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix",
+                                "nullable": true
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "start",
+                                    "output",
+                                    "logs",
+                                    "completed"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status",
+                                "nullable": true
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics",
+                                "nullable": true,
+                                "additionalProperties": true
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,401 @@
+{
+    "url": "https://replicate.com/black-forest-labs/flux-2-klein-9b-base-lora",
+    "owner": "black-forest-labs",
+    "name": "flux-2-klein-9b-base-lora",
+    "description": "A version of FLUX.2 [klein] 9B-base that supports fast fine-tuned lora inference",
+    "visibility": "public",
+    "github_url": null,
+    "paper_url": null,
+    "license_url": null,
+    "run_count": 1908,
+    "cover_image_url": "https://tjzk.replicate.delivery/models_models_cover_image/74547c2b-3805-40e2-8c44-8a380440bb85/replicate-prediction-4qxyhv59qdrm.jpg",
+    "default_example": {
+        "id": "ktb7yknw7drmr0cw0qg9dgx8xc",
+        "model": "black-forest-labs/flux-2-klein-9b-base-lora",
+        "version": "hidden",
+        "status": "succeeded",
+        "input": {
+            "images": [
+                "https://replicate.delivery/pbxt/OUWhtQrszgFaz6bqkETTmv0EvmogQYjDS0E0d0txSKKPTiQG/pexels-ren-lavsad-379156630-18609132.jpg"
+            ],
+            "prompt": "Transform this picture into an American comic style + Pop Art + cyber neon illustration",
+            "lora_scales": [
+                1
+            ],
+            "aspect_ratio": "match_input_image",
+            "lora_weights": [
+                "https://huggingface.co/starsfriday/FLUX.2-klein-AC-Style-LORA/resolve/main/flux2_klein_lowres.safetensors"
+            ],
+            "output_format": "jpg",
+            "output_quality": 95,
+            "output_megapixels": "1"
+        },
+        "output": [
+            "https://replicate.delivery/xezq/RRF7qKgfvE0UIKIsbxzISGZbX5VsM5TC1gv1eKs1LmF2gACWA/out.jpg"
+        ],
+        "logs": "Using seed: 3911410155\nLoading 1 LoRA(s)...\nLoading LoRA 1/1: https://huggingface.co/starsfriday/FLUX.2-klein-AC-Style-LORA/resolve/main/flux2_klein_lowres.safetensors\nUsing cached processed LoRA for: https://huggingface.co/starsfriday/FLUX.2-klein-AC-Style-LORA/resolve/main/flux2_klein_lowres.safetensors\nApplying LoRA with scale 1.0...\nLoading LoRA from: /tmp/lora_cache/21b8ccd7f9dd99b4d9f83bc64b6dfd6e_lora.safetensors\nLoaded 224 LoRA weights\nApplied LoRA to: double_blocks.0.img_attn.proj (scale=1.0, norm: 87.50 -> 87.50)\nApplied LoRA to: double_blocks.0.img_attn.qkv (scale=1.0, norm: 129.00 -> 130.00)\nSkipping: double_blocks.0.img_mlp.0 (module not found)\nSkipping: double_blocks.0.img_mlp.2 (module not found)\nApplied LoRA to: double_blocks.0.txt_attn.proj (scale=1.0, norm: 91.00 -> 91.00)\nApplied LoRA to: double_blocks.0.txt_attn.qkv (scale=1.0, norm: 151.00 -> 151.00)\nSkipping: double_blocks.0.txt_mlp.0 (module not found)\nSkipping: double_blocks.0.txt_mlp.2 (module not found)\nApplied LoRA to: double_blocks.1.img_attn.proj (scale=1.0, norm: 91.50 -> 91.50)\nSkipping: double_blocks.1.img_mlp.0 (module not found)\nSkipping: double_blocks.1.img_mlp.2 (module not found)\nSkipping: double_blocks.1.txt_mlp.0 (module not found)\nSkipping: double_blocks.1.txt_mlp.2 (module not found)\nSkipping: double_blocks.2.img_mlp.0 (module not found)\nSkipping: double_blocks.2.img_mlp.2 (module not found)\nSkipping: double_blocks.2.txt_mlp.0 (module not found)\nSkipping: double_blocks.2.txt_mlp.2 (module not found)\nSkipping: double_blocks.3.img_mlp.0 (module not found)\nSkipping: double_blocks.3.img_mlp.2 (module not found)\nSkipping: double_blocks.3.txt_mlp.0 (module not found)\nSkipping: double_blocks.3.txt_mlp.2 (module not found)\nSkipping: double_blocks.4.img_mlp.0 (module not found)\nSkipping: double_blocks.4.img_mlp.2 (module not found)\nSkipping: double_blocks.4.txt_mlp.0 (module not found)\nSkipping: double_blocks.4.txt_mlp.2 (module not found)\nSkipping: double_blocks.5.img_mlp.0 (module not found)\nSkipping: double_blocks.5.img_mlp.2 (module not found)\nSkipping: double_blocks.5.txt_mlp.0 (module not found)\nSkipping: double_blocks.5.txt_mlp.2 (module not found)\nSkipping: double_blocks.6.img_mlp.0 (module not found)\nSkipping: double_blocks.6.img_mlp.2 (module not found)\nSkipping: double_blocks.6.txt_mlp.0 (module not found)\nSkipping: double_blocks.6.txt_mlp.2 (module not found)\nSkipping: double_blocks.7.img_mlp.0 (module not found)\nSkipping: double_blocks.7.img_mlp.2 (module not found)\nSkipping: double_blocks.7.txt_mlp.0 (module not found)\nSkipping: double_blocks.7.txt_mlp.2 (module not found)\nLoRA application complete:\nApplied: 80\nSkipped: 32\nLoRA 1 applied successfully\nLoaded 1 reference image(s)\nMatched dimensions from input image: 832x1248 (1.00 MP)\nGenerating 832x1248 image (1.00 MP, match_input_image) ...\nGeneration took 1.59s\nRestoring model to original state...",
+        "error": null,
+        "metrics": {
+            "predict_time": 2.460144272,
+            "total_time": 2.492601297
+        },
+        "created_at": "2026-01-28T18:32:20.283000Z",
+        "started_at": "2026-01-28T18:32:20.315457Z",
+        "completed_at": "2026-01-28T18:32:22.775601Z",
+        "urls": {
+            "stream": "https://stream.replicate.com/v1/files/jbxs-ulzf6ypu4r2m4se3fxy3g5emizd75nfldnzdz775ug5vfnnbbqcq",
+            "get": "https://api.replicate.com/v1/predictions/ktb7yknw7drmr0cw0qg9dgx8xc",
+            "cancel": "https://api.replicate.com/v1/predictions/ktb7yknw7drmr0cw0qg9dgx8xc/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "5e92f3f81c77962ddc86ddd75c8fc46c92a26730b1ac13701a39aa10eac464f0",
+        "created_at": "2026-01-28T19:34:42.101897+00:00",
+        "cog_version": "0.16.9",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "prompt"
+                        ],
+                        "properties": {
+                            "seed": {
+                                "type": "integer",
+                                "title": "Seed",
+                                "x-order": 4,
+                                "nullable": true,
+                                "description": "Random seed. Set for reproducible generation"
+                            },
+                            "images": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "format": "uri"
+                                },
+                                "title": "Images",
+                                "default": [],
+                                "x-order": 1,
+                                "description": "List of input images for image-to-image generation. Maximum 5 images. Must be jpeg, png, gif, or webp."
+                            },
+                            "prompt": {
+                                "type": "string",
+                                "title": "Prompt",
+                                "x-order": 0,
+                                "description": "Text prompt for image generation."
+                            },
+                            "lora_scales": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                },
+                                "title": "Lora Scales",
+                                "x-order": 6,
+                                "nullable": true,
+                                "description": "Scales for each LoRA as a list of floats. Must match the number of lora_weights. Defaults to 1.0 for each if not provided."
+                            },
+                            "aspect_ratio": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/aspect_ratio"
+                                    }
+                                ],
+                                "default": "1:1",
+                                "x-order": 2,
+                                "description": "Aspect ratio for the generated image. Use 'match_input_image' to match the aspect ratio of the first input image."
+                            },
+                            "lora_weights": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Lora Weights",
+                                "x-order": 5,
+                                "nullable": true,
+                                "description": "LoRA weights as a list of URLs. Supports ComfyUI and native Flux Klein format LoRAs. ComfyUI LoRAs are automatically converted."
+                            },
+                            "output_format": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/output_format"
+                                    }
+                                ],
+                                "default": "jpg",
+                                "x-order": 7,
+                                "description": "Format of the output images"
+                            },
+                            "output_quality": {
+                                "type": "integer",
+                                "title": "Output Quality",
+                                "default": 95,
+                                "maximum": 100,
+                                "minimum": 0,
+                                "x-order": 8,
+                                "description": "Quality when saving the output images, from 0 to 100. 100 is best quality, 0 is lowest quality. Not relevant for .png outputs."
+                            },
+                            "output_megapixels": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/output_megapixels"
+                                    }
+                                ],
+                                "default": "1",
+                                "x-order": 3,
+                                "description": "Resolution of the output image in megapixels"
+                            },
+                            "disable_safety_checker": {
+                                "type": "boolean",
+                                "title": "Disable Safety Checker",
+                                "default": false,
+                                "x-order": 9,
+                                "description": "Disable safety checker for generated images."
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "title": "Output"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "aspect_ratio": {
+                        "enum": [
+                            "1:1",
+                            "16:9",
+                            "9:16",
+                            "3:2",
+                            "2:3",
+                            "4:3",
+                            "3:4",
+                            "5:4",
+                            "4:5",
+                            "21:9",
+                            "9:21",
+                            "match_input_image"
+                        ],
+                        "type": "string",
+                        "title": "aspect_ratio",
+                        "description": "An enumeration."
+                    },
+                    "output_format": {
+                        "enum": [
+                            "webp",
+                            "jpg",
+                            "png"
+                        ],
+                        "type": "string",
+                        "title": "output_format",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "context": {
+                                "type": "object",
+                                "title": "Context",
+                                "nullable": true,
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "nullable": true,
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix",
+                                "nullable": true
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "start",
+                                    "output",
+                                    "logs",
+                                    "completed"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "output_megapixels": {
+                        "enum": [
+                            "0.25",
+                            "0.5",
+                            "1",
+                            "2",
+                            "4"
+                        ],
+                        "type": "string",
+                        "title": "output_megapixels",
+                        "description": "An enumeration."
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status",
+                                "nullable": true
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics",
+                                "nullable": true,
+                                "additionalProperties": true
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,193 @@
+{
+    "url": "https://replicate.com/tencentarc/gfpgan",
+    "owner": "tencentarc",
+    "name": "gfpgan",
+    "description": "Practical face restoration algorithm for *old photos* or *AI-generated faces*",
+    "visibility": "public",
+    "github_url": "https://github.com/replicate/GFPGAN",
+    "paper_url": "https://arxiv.org/abs/2101.04061",
+    "license_url": "https://github.com/TencentARC/GFPGAN/blob/master/LICENSE",
+    "run_count": 111615185,
+    "cover_image_url": "https://tjzk.replicate.delivery/models_models_featured_image/40223a51-a460-4f27-b13a-bf5d6429b686/output_1.png",
+    "default_example": {
+        "id": "ffu2e6aw4barxliwxu23ydgbnu",
+        "model": "tencentarc/gfpgan",
+        "version": "297a243ce8643961d52f745f9b6c8c1bd96850a51c92be5f43628a0d3e08321a",
+        "status": "succeeded",
+        "input": {
+            "img": "https://replicate.delivery/mgxm/59d9390c-b415-47e0-a907-f81b0d9920f1/187400315-87a90ac9-d231-45d6-b377-38702bd1838f.jpg",
+            "scale": 2,
+            "version": "v1.4"
+        },
+        "output": "https://replicate.delivery/mgxm/85f53415-0dc7-4703-891f-1e6f912119ad/output.png",
+        "logs": "/tmp/tmpky22vsq_187400315-87a90ac9-d231-45d6-b377-38702bd1838f.jpg v1.4 2.0",
+        "error": null,
+        "metrics": {
+            "predict_time": 1.674856,
+            "total_time": 1.96535
+        },
+        "created_at": "2022-09-04T15:41:27.941644Z",
+        "started_at": "2022-09-04T15:41:28.232138Z",
+        "completed_at": "2022-09-04T15:41:29.906994Z",
+        "urls": {
+            "get": "https://api.replicate.com/v1/predictions/ffu2e6aw4barxliwxu23ydgbnu",
+            "cancel": "https://api.replicate.com/v1/predictions/ffu2e6aw4barxliwxu23ydgbnu/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "0fbacf7afc6c144e5be9767cff80f25aff23e52b0708f17e20f9879b2f21516c",
+        "created_at": "2024-03-14T00:42:49.367274+00:00",
+        "cog_version": "0.4.2",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "img"
+                        ],
+                        "properties": {
+                            "img": {
+                                "type": "string",
+                                "title": "Img",
+                                "format": "uri",
+                                "x-order": 0,
+                                "description": "Input"
+                            },
+                            "scale": {
+                                "type": "number",
+                                "title": "Scale",
+                                "default": 2,
+                                "x-order": 2,
+                                "description": "Rescaling factor"
+                            },
+                            "version": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/version"
+                                    }
+                                ],
+                                "default": "v1.4",
+                                "x-order": 1,
+                                "description": "GFPGAN version. v1.3: better quality. v1.4: more details and better identity."
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "string",
+                        "title": "Output",
+                        "format": "uri"
+                    },
+                    "Status": {
+                        "enum": [
+                            "processing",
+                            "succeeded",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "Request": {
+                        "type": "object",
+                        "title": "Request",
+                        "properties": {
+                            "input": {
+                                "$ref": "#/components/schemas/Input"
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix"
+                            }
+                        },
+                        "description": "The request body for a prediction"
+                    },
+                    "version": {
+                        "enum": [
+                            "v1.2",
+                            "v1.3",
+                            "v1.4",
+                            "RestoreFormer"
+                        ],
+                        "type": "string",
+                        "title": "version",
+                        "description": "An enumeration."
+                    },
+                    "Response": {
+                        "type": "object",
+                        "title": "Response",
+                        "required": [
+                            "status"
+                        ],
+                        "properties": {
+                            "error": {
+                                "type": "string",
+                                "title": "Error"
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status"
+                            }
+                        },
+                        "description": "The response body for a prediction"
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

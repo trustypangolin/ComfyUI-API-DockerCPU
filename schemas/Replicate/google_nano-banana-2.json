@@ -1,0 +1,355 @@
+{
+    "url": "https://replicate.com/google/nano-banana-2",
+    "owner": "google",
+    "name": "nano-banana-2",
+    "description": "Google's fast image generation model with conversational editing, multi-image fusion, and character consistency",
+    "visibility": "public",
+    "github_url": "https://github.com/replicate/cog-google-proxy",
+    "paper_url": null,
+    "license_url": null,
+    "run_count": 5140740,
+    "cover_image_url": "https://tjzk.replicate.delivery/models_models_featured_image/80e7a89d-6163-4a92-927c-79ec74379079/nano-banana-2.png",
+    "default_example": {
+        "id": "61egkqv1v9rmt0cwkbxbzw766w",
+        "model": "google/nano-banana-2",
+        "version": "hidden",
+        "status": "succeeded",
+        "input": {
+            "prompt": "An isometric 3D miniature diorama of a cozy Japanese ramen shop at night. Warm light spills from the entrance. Tiny detailed figures sit at the counter. Steam rises from bowls of ramen. Rain puddles reflect neon signs on the street. Tilt-shift photography effect.",
+            "aspect_ratio": "1:1"
+        },
+        "output": "https://replicate.delivery/xezq/aW4vaIf7HUzcXqnlgGeyic1l1eH0zUrRxNGtwcdDYOfu7MuYB/tmp7ag51byn.jpeg",
+        "logs": "Sid 61egkqv1v9rmt0cwkbxbzw766w\nGenerating image with Gemini Flash...\nTokens: 2130\nGenerated image in 24.77 seconds",
+        "error": null,
+        "metrics": {
+            "predict_time": 24.806426278,
+            "total_time": 24.815801705
+        },
+        "created_at": "2026-02-26T17:23:46.266000Z",
+        "started_at": "2026-02-26T17:23:46.275375Z",
+        "completed_at": "2026-02-26T17:24:11.081801Z",
+        "urls": {
+            "stream": "https://stream.replicate.com/v1/files/jbxs-pwvwlek4qtg7vwrng3j4vmaqadx33bwjgksthzeluhpmtlimfd2a",
+            "get": "https://api.replicate.com/v1/predictions/61egkqv1v9rmt0cwkbxbzw766w",
+            "cancel": "https://api.replicate.com/v1/predictions/61egkqv1v9rmt0cwkbxbzw766w/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "71516450bdbeafc41df33ad538bc8cc6a90f80038a563b1260531c02d694f4fd",
+        "created_at": "2026-02-27T21:32:24.053182+00:00",
+        "cog_version": "0.16.12",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "prompt"
+                        ],
+                        "properties": {
+                            "prompt": {
+                                "type": "string",
+                                "title": "Prompt",
+                                "x-order": 0,
+                                "description": "A text description of the image you want to generate"
+                            },
+                            "resolution": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/resolution"
+                                    }
+                                ],
+                                "default": "1K",
+                                "x-order": 3,
+                                "description": "Resolution of the generated image. Higher resolutions take longer to generate."
+                            },
+                            "image_input": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "format": "uri"
+                                },
+                                "title": "Image Input",
+                                "default": [],
+                                "x-order": 1,
+                                "description": "Input images to transform or use as reference (supports up to 14 images)"
+                            },
+                            "aspect_ratio": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/aspect_ratio"
+                                    }
+                                ],
+                                "default": "match_input_image",
+                                "x-order": 2,
+                                "description": "Aspect ratio of the generated image"
+                            },
+                            "image_search": {
+                                "type": "boolean",
+                                "title": "Image Search",
+                                "default": false,
+                                "x-order": 5,
+                                "description": "Use Google Image Search grounding to find web images as visual context for generation. When enabled, web search is also used automatically."
+                            },
+                            "google_search": {
+                                "type": "boolean",
+                                "title": "Google Search",
+                                "default": false,
+                                "x-order": 4,
+                                "description": "Use Google Web Search grounding to generate images based on real-time information (e.g. weather, sports scores, recent events)."
+                            },
+                            "output_format": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/output_format"
+                                    }
+                                ],
+                                "default": "jpg",
+                                "x-order": 6,
+                                "description": "Format of the output image"
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "string",
+                        "title": "Output",
+                        "format": "uri"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "resolution": {
+                        "enum": [
+                            "1K",
+                            "2K",
+                            "4K"
+                        ],
+                        "type": "string",
+                        "title": "resolution",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "aspect_ratio": {
+                        "enum": [
+                            "match_input_image",
+                            "1:1",
+                            "1:4",
+                            "1:8",
+                            "2:3",
+                            "3:2",
+                            "3:4",
+                            "4:1",
+                            "4:3",
+                            "4:5",
+                            "5:4",
+                            "8:1",
+                            "9:16",
+                            "16:9",
+                            "21:9"
+                        ],
+                        "type": "string",
+                        "title": "aspect_ratio",
+                        "description": "An enumeration."
+                    },
+                    "output_format": {
+                        "enum": [
+                            "jpg",
+                            "png"
+                        ],
+                        "type": "string",
+                        "title": "output_format",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "context": {
+                                "type": "object",
+                                "title": "Context",
+                                "nullable": true,
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "nullable": true,
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix",
+                                "nullable": true
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "start",
+                                    "output",
+                                    "logs",
+                                    "completed"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status",
+                                "nullable": true
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics",
+                                "nullable": true,
+                                "additionalProperties": true
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

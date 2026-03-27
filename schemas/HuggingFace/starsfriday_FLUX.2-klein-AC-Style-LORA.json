@@ -1,0 +1,30 @@
+{
+    "repo_id": "starsfriday/FLUX.2-klein-AC-Style-LORA",
+    "type": "huggingface_repo",
+    "repo_type": "model",
+    "models": [
+        {
+            "filename": "flux2_klein_lowres.safetensors",
+            "url": "https://huggingface.co/starsfriday/FLUX.2-klein-AC-Style-LORA/resolve/main/flux2_klein_lowres.safetensors",
+            "path": "flux2_klein_lowres.safetensors"
+        }
+    ],
+    "metadata": {
+        "sha": "f2d87ef8c83f61ba0b8875a22237f1693dd6c7d1",
+        "downloads": 92,
+        "likes": 4,
+        "tags": [
+            "diffusers",
+            "image-generation",
+            "lora",
+            "black-forest-labs/FLUX.2-klein-base-9B",
+            "image-to-image",
+            "en",
+            "base_model:black-forest-labs/FLUX.2-klein-base-9B",
+            "base_model:adapter:black-forest-labs/FLUX.2-klein-base-9B",
+            "license:apache-2.0",
+            "region:us"
+        ]
+    },
+    "fetched_at": "2026-03-27T05:20:13.892988+00:00"
+}

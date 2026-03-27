@@ -1,0 +1,269 @@
+{
+    "url": "https://replicate.com/sczhou/codeformer",
+    "owner": "sczhou",
+    "name": "codeformer",
+    "description": "Robust face restoration algorithm for old photos / AI-generated faces",
+    "visibility": "public",
+    "github_url": "https://github.com/sczhou/CodeFormer",
+    "paper_url": "https://arxiv.org/abs/2206.11253",
+    "license_url": "https://github.com/sczhou/CodeFormer/blob/master/LICENSE",
+    "run_count": 51440840,
+    "cover_image_url": "https://tjzk.replicate.delivery/models_models_featured_image/0e31af92-963e-4ae3-b900-6104b22f4f7f/012.png",
+    "default_example": {
+        "id": "tlm3wkg3aveyvjzmv6es65dy5m",
+        "model": "sczhou/codeformer",
+        "version": "7de2ea26c616d5bf2245ad0d5e24f0ff9a6204578a5c876db53142edd9d2cd56",
+        "status": "succeeded",
+        "input": {
+            "image": "https://replicate.delivery/mgxm/a11098b0-a18a-4c02-a19a-9a7045d68426/010.jpg",
+            "upscale": 2,
+            "face_upsample": true,
+            "background_enhance": true,
+            "codeformer_fidelity": "0.1"
+        },
+        "output": "https://replicate.delivery/mgxm/5c63e499-7f07-49d7-abfe-4af11015713e/output.png",
+        "logs": "\tdetect 1 faces",
+        "error": null,
+        "metrics": {
+            "predict_time": 21.283789,
+            "total_time": 55.069831
+        },
+        "created_at": "2022-09-12T05:00:26.359445Z",
+        "started_at": "2022-09-12T05:01:00.145487Z",
+        "completed_at": "2022-09-12T05:01:21.429276Z",
+        "urls": {
+            "get": "https://api.replicate.com/v1/predictions/tlm3wkg3aveyvjzmv6es65dy5m",
+            "cancel": "https://api.replicate.com/v1/predictions/tlm3wkg3aveyvjzmv6es65dy5m/cancel"
+        }
+    },
+    "latest_version": {
+        "id": "cc4956dd26fa5a7185d5660cc9100fab1b8070a1d1654a8bb5eb6d443b020bb2",
+        "created_at": "2025-01-20T19:08:07.300876+00:00",
+        "cog_version": "0.8.5",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "image"
+                        ],
+                        "properties": {
+                            "image": {
+                                "type": "string",
+                                "title": "Image",
+                                "format": "uri",
+                                "x-order": 0,
+                                "description": "Input image"
+                            },
+                            "upscale": {
+                                "type": "integer",
+                                "title": "Upscale",
+                                "default": 2,
+                                "x-order": 4,
+                                "description": "The final upsampling scale of the image"
+                            },
+                            "face_upsample": {
+                                "type": "boolean",
+                                "title": "Face Upsample",
+                                "default": true,
+                                "x-order": 3,
+                                "description": "Upsample restored faces for high-resolution AI-created images"
+                            },
+                            "background_enhance": {
+                                "type": "boolean",
+                                "title": "Background Enhance",
+                                "default": true,
+                                "x-order": 2,
+                                "description": "Enhance background image with Real-ESRGAN"
+                            },
+                            "codeformer_fidelity": {
+                                "type": "number",
+                                "title": "Codeformer Fidelity",
+                                "default": 0.5,
+                                "maximum": 1,
+                                "minimum": 0,
+                                "x-order": 1,
+                                "description": "Balance the quality (lower number) and fidelity (higher number)."
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "string",
+                        "title": "Output",
+                        "format": "uri"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id"
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input"
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time"
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix"
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "logs",
+                                    "completed",
+                                    "start",
+                                    "output"
+                                ],
+                                "uniqueItems": true
+                            }
+                        }
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id"
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error"
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input"
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status"
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics"
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version"
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time"
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time"
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time"
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

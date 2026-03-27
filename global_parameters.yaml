@@ -1,0 +1,478 @@
+# Global PARAMETER definitions for ComfyUI-API-DockerCPU
+# PARAMETERS are typed data fields (STRING, COMBO, INT, FLOAT, BOOLEAN).
+# These are NOT media links - they are values entered or selected by the user.
+#
+# ComfyUI handles whether a PARAMETER can be linked to an INPUT.
+# This file defines all non-media parameters that users can configure.
+#
+# PARAMETER groups:
+# - basic: Primary parameters users typically configure
+# - advanced: Secondary parameters for power users
+# - system: Internal/system parameters (dry_run, force_rerun, etc.)
+
+version: "1.0"
+description: "Global PARAMETER patterns by API provider - non-media fields"
+
+# ============================================
+# Replicate API PARAMETER Patterns
+# ============================================
+
+replicate_api:
+  description: "Models from Replicate.com"
+  
+  # Standard parameters added to all Replicate nodes
+  standard_parameters:
+    dry_run:
+      type: BOOLEAN
+      default: false
+      description: "When enabled, returns debug info without calling the API"
+      group: system
+      order: -2
+    force_rerun:
+      type: BOOLEAN
+      default: false
+      description: "Force re-execution even with same inputs"
+      group: system
+      order: -1
+  
+  parameters:
+    
+    # ----------------------------------------
+    # Text Parameters
+    # ----------------------------------------
+    
+    # Pattern: Text prompt
+    prompt:
+      field_match:
+        name: "prompt"
+        type: string
+      comfyui_type: STRING
+      multiline: true
+      group: basic
+      order: 0
+      required: true
+      description: "Text prompt"
+    
+    # ----------------------------------------
+    # Numeric Parameters
+    # ----------------------------------------
+    
+    # Pattern: Random seed (nullable integer)
+    seed:
+      field_match:
+        name: "seed"
+        type: integer
+        nullable: true
+      comfyui_type: INT
+      group: basic
+      widget: seed  # ComfyUI seed widget
+      description: "Random seed (leave blank for random)"
+    
+    # Pattern: Numeric scale factor
+    scale:
+      field_match:
+        name_patterns:
+          - "scale"
+          - "upscale_factor"
+        type: number
+      comfyui_type: FLOAT
+      group: basic
+      description: "Scale factor"
+    
+    # Pattern: Quality setting
+    quality:
+      field_match:
+        name_patterns:
+          - "quality"
+          - "output_quality"
+          - "image_quality"
+        type: number
+      comfyui_type: FLOAT
+      group: advanced
+      description: "Quality setting"
+    
+    # Pattern: Strength/fidelity
+    strength:
+      field_match:
+        name_patterns:
+          - "strength"
+          - "fidelity_threshold"
+          - "guidance_scale"
+          - "cfg_scale"
+        type: number
+      comfyui_type: FLOAT
+      group: basic
+      description: "Strength or guidance setting"
+    
+    # Pattern: Steps count
+    steps:
+      field_match:
+        name_patterns:
+          - "sample_steps"
+          - "num_inference_steps"
+          - "steps"
+        type: integer
+      comfyui_type: INT
+      group: basic
+      description: "Number of inference steps"
+    
+    # ----------------------------------------
+    # Enum/Combo Parameters
+    # ----------------------------------------
+    
+    # Pattern: Aspect ratio selection
+    aspect_ratio:
+      field_match:
+        name_patterns:
+          - "aspect_ratio"
+          - "resolution"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Aspect ratio or resolution"
+    
+    # Pattern: Output format selection
+    output_format:
+      field_match:
+        name_patterns:
+          - "output_format"
+          - "format"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: advanced
+      description: "Output format selection"
+    
+    # Pattern: Model selection
+    model_select:
+      field_match:
+        name_patterns:
+          - "model"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Model selection"
+    
+    # Pattern: Version selection
+    version_select:
+      field_match:
+        name_patterns:
+          - "version"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Version selection"
+    
+    # Pattern: RVC model selection
+    rvc_model:
+      field_match:
+        name: "rvc_model"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: basic
+      description: "RVC voice model"
+    
+    # Pattern: Pitch change selection
+    pitch_change:
+      field_match:
+        name: "pitch_change"
+        type: string
+        has_enum_ref: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Pitch change selection"
+    
+    # ----------------------------------------
+    # Boolean Parameters
+    # ----------------------------------------
+    
+    # Pattern: Boolean flags
+    boolean_flag:
+      field_match:
+        name_patterns:
+          - "face_enhance"
+          - "face_upsample"
+          - "background_enhance"
+          - "disable_safety_checker"
+          - "enable_safety_checker"
+          - "go_fast"
+        type: boolean
+      comfyui_type: BOOLEAN
+      group: advanced
+      description: "Boolean option"
+    
+    # Pattern: Safety tolerance
+    safety_tolerance:
+      field_match:
+        name: "safety_tolerance"
+        type: integer
+      comfyui_type: INT
+      group: advanced
+      description: "Safety tolerance level"
+    
+    # ----------------------------------------
+    # Audio Processing Parameters
+    # ----------------------------------------
+    
+    # Pattern: Float with min/max
+    audio_float_param:
+      field_match:
+        name_patterns:
+          - "protect"
+          - "index_rate"
+          - "rms_mix_rate"
+          - "reverb_size"
+          - "filter_radius"
+        type: number
+      comfyui_type: FLOAT
+      group: advanced
+      description: "Audio processing parameter"
+    
+    # Pattern: Crepe hop length
+    crepe_hop_length:
+      field_match:
+        name: "crepe_hop_length"
+        type: integer
+      comfyui_type: INT
+      group: advanced
+      description: "Crepe hop length for pitch detection"
+
+# ============================================
+# FalAi API PARAMETER Patterns
+# ============================================
+
+fal_ai_api:
+  description: "Models from Fal.ai"
+  
+  # Standard parameters added to all FalAi nodes
+  standard_parameters:
+    dry_run:
+      type: BOOLEAN
+      default: false
+      description: "When enabled, returns debug info without calling the API"
+      group: system
+      order: -2
+    sync_mode:
+      type: BOOLEAN
+      default: false
+      description: "If true, media returned as data URI (not stored)"
+      group: system
+      order: -1
+  
+  parameters:
+    
+    # ----------------------------------------
+    # Text Parameters
+    # ----------------------------------------
+    
+    # Pattern: Text prompt
+    prompt:
+      field_match:
+        name: "prompt"
+        type: string
+      comfyui_type: STRING
+      multiline: true
+      group: basic
+      order: 0
+      required: true
+      description: "Text prompt"
+    
+    # ----------------------------------------
+    # Numeric Parameters
+    # ----------------------------------------
+    
+    # Pattern: Random seed (nullable integer)
+    seed:
+      field_match:
+        name: "seed"
+        any_of:
+          - type: integer
+          - type: "null"
+      comfyui_type: INT
+      group: basic
+      description: "Random seed (leave blank for random)"
+    
+    # Pattern: Number of images
+    num_images:
+      field_match:
+        name: "num_images"
+        type: integer
+      comfyui_type: INT
+      group: basic
+      description: "Number of images to generate"
+    
+    # Pattern: Inference steps
+    num_inference_steps:
+      field_match:
+        name: "num_inference_steps"
+        type: integer
+      comfyui_type: INT
+      group: basic
+      description: "Number of inference steps"
+    
+    # Pattern: Noise scale
+    noise_scale:
+      field_match:
+        name: "noise_scale"
+        type: number
+      comfyui_type: FLOAT
+      group: advanced
+      description: "Noise scale for generation"
+    
+    # Pattern: Upscale factor
+    upscale_factor:
+      field_match:
+        name: "upscale_factor"
+        type: number
+      comfyui_type: FLOAT
+      group: basic
+      description: "Upscale factor"
+    
+    # ----------------------------------------
+    # Enum/Combo Parameters
+    # ----------------------------------------
+    
+    # Pattern: Upscale mode selection
+    upscale_mode:
+      field_match:
+        name: "upscale_mode"
+        type: string
+        has_enum: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Upscale mode (target or factor)"
+    
+    # Pattern: Target resolution
+    target_resolution:
+      field_match:
+        name: "target_resolution"
+        type: string
+        has_enum: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Target resolution"
+    
+    # Pattern: Output format
+    output_format:
+      field_match:
+        name: "output_format"
+        type: string
+        has_enum: true
+      comfyui_type: COMBO
+      group: advanced
+      description: "Output format"
+    
+    # Pattern: Image size/aspect ratio
+    image_size:
+      field_match:
+        name: "image_size"
+        any_of:
+          - type: object
+          - type: string
+            has_enum: true
+      comfyui_type: COMBO
+      group: basic
+      description: "Image size or aspect ratio"
+    
+    # ----------------------------------------
+    # Boolean Parameters
+    # ----------------------------------------
+    
+    # Pattern: Safety checker
+    enable_safety_checker:
+      field_match:
+        name: "enable_safety_checker"
+        type: boolean
+      comfyui_type: BOOLEAN
+      group: advanced
+      description: "Enable NSFW safety checker"
+
+# ============================================
+# HuggingFace API PARAMETER Patterns
+# ============================================
+
+huggingface_api:
+  description: "Models from HuggingFace.co"
+  
+  parameters:
+    
+    # Pattern: Text input
+    text:
+      field_match:
+        name: "text"
+        type: string
+      comfyui_type: STRING
+      group: basic
+      order: 0
+      description: "Input text"
+
+# ============================================
+# Common Parameter Groups & Standard Ordering
+# ============================================
+# Default grouping and ordering for common parameters
+# Per-model settings can override these in supported_models.yaml
+# ============================================
+
+parameter_groups:
+  system:
+    - force_rerun
+    - dry_run
+    - sync_mode
+  
+  basic:
+    - prompt
+    - seed
+    - scale
+    - aspect_ratio
+    - model_select
+    - num_images
+    - num_inference_steps
+    - upscale_mode
+    - target_resolution
+  
+  advanced:
+    - output_format
+    - quality
+    - steps
+    - strength
+    - boolean_flag
+    - enable_safety_checker
+    - safety_tolerance
+
+# ============================================
+# Standard Display Order
+# ============================================
+# Default order values for common parameters
+# Lower numbers appear first. Gaps allow for easy insertion.
+# ============================================
+
+standard_order:
+  prompt: 0
+  seed: 10
+  scale: 20
+  aspect_ratio: 30
+  model_select: 40
+  num_images: 50
+  num_inference_steps: 60
+  upscale_mode: 70
+  target_resolution: 80
+  output_format: 100
+  quality: 110
+  steps: 120
+  strength: 130
+  boolean_flag: 200
+  enable_safety_checker: 210
+  safety_tolerance: 220
+
+# ============================================
+# Standard Widgets
+# ============================================
+# ComfyUI widget types for specific parameters
+# ============================================
+
+standard_widgets:
+  seed: seed

@@ -1,0 +1,221 @@
+# Supported models configuration for ComfyUI-API-DockerCPU
+#
+# Key features:
+# - Input type overrides for media fields
+# - Parameter ordering with custom priority
+# - Output type definitions
+# - Per-model customization
+
+version: "2.0"
+description: "Supported models for ComfyUI-API-DockerCPU"
+
+# Global defaults apply to all providers unless overridden
+# Note: All global patterns are defined in:
+# - global_inputs.yaml (media inputs)
+# - global_parameters.yaml (parameters, standard settings)
+# - global_outputs.yaml (outputs)
+
+# Replicate provider configuration
+replicate:
+  description: "Models from Replicate.com"
+  # Note: Input/output patterns are in global_inputs.yaml and global_outputs.yaml
+  
+  # Global settings for all Replicate models
+  global:
+    # Default image handling
+    max_images: 0  # 0 = single image mode
+  
+  models:
+
+    google/nano-banana:
+      display_name: "Google Nano Banana"
+      description: "Fast, high-quality text-to-image generation"
+      category: "image-generation"
+      max_images: 3
+      array_input_field: "image_input"
+      inputs:
+        image_input:
+          is_array: true
+          max_items: 3
+
+    google/nano-banana-pro:
+      display_name: "Google Nano Banana Pro"
+      description: "Fast, high-quality text-to-image generation"
+      category: "image-generation"
+      max_images: 3
+      array_input_field: "image_input"
+      inputs:
+        image_input:
+          is_array: true
+          max_items: 14
+
+    google/nano-banana-2:
+      display_name: "Google Nano Banana 2"
+      description: "Fast, high-quality text-to-image generation"
+      category: "image-generation"
+      max_images: 3
+      array_input_field: "image_input"
+      inputs:
+        image_input:
+          is_array: true
+          max_items: 14
+
+    black-forest-labs/flux-2-klein-9b:
+      display_name: "FLUX.2 [klein] 9B"
+      description: "Fast, high-quality text-to-image generation"
+      category: "image-generation"
+      max_images: 5
+      array_input_field: "images"
+      inputs:
+        images:
+          is_array: true
+          max_items: 5
+      outputs:
+        output:
+          type: IMAGE
+          alias: IMAGE
+
+    black-forest-labs/flux-2-klein-9b-base-lora:
+      display_name: "FLUX.2 [klein] 9B Base LoRA"
+      description: "Fast fine-tuned LoRA inference"
+      category: "image-generation"
+      max_images: 5
+      array_input_field: "images"
+      inputs:
+        images:
+          is_array: true
+          max_items: 5
+        lora_weights:
+          type: STRING
+          is_array: true
+        lora_scales:
+          type: FLOAT
+          is_array: true
+
+    black-forest-labs/flux-2-max:
+      display_name: "FLUX.2 [max]"
+      description: "Highest fidelity image model"
+      category: "image-generation"
+      max_images: 8
+      array_input_field: "input_images"
+      inputs:
+        input_images:
+          is_array: true
+          max_items: 8
+
+    black-forest-labs/flux-2-pro:
+      display_name: "FLUX.2 [pro]"
+      description: "Professional image generation with best quality"
+      category: "image-generation"
+      max_images: 8
+      array_input_field: "input_images"
+      inputs:
+        input_images:
+          is_array: true
+          max_items: 8
+
+    # ============================================================
+    # Upscaling Models
+    # ============================================================
+    
+    papina/seedvr2:
+      display_name: "SeedVR 2"
+      description: "Realistic vision enhancement upscaler"
+      category: "image-upscaling"
+
+    philz1337x/crystal-upscaler:
+      display_name: "Crystal Upscaler"
+      description: "High-quality image upscaler"
+      category: "image-upscaling"
+
+    topazlabs/image-upscale:
+      display_name: "TopazLabs Image Upscale"
+      description: "Professional image upscaling"
+      category: "image-upscaling"
+
+    sczhou/codeformer:
+      display_name: "CodeFormer"
+      description: "Face restoration and enhancement"
+      category: "face-restoration"
+
+    tencentarc/gfpgan:
+      display_name: "GFPGAN"
+      description: "Face face-restoration tool"
+      category: "face-restoration"
+
+    # ============================================================
+    # Video/Audio Models
+    # ============================================================
+    
+    zsxkib/seedvr2:
+      display_name: "SeedVR 2 Video"
+      description: "Video upscaling with SeedVR"
+      category: "video-upscaling"
+
+    zsxkib/realistic-voice-cloning:
+      display_name: "Realistic Voice Cloning"
+      description: "Create AI song covers with RVC voice models"
+      category: "audio-processing"
+
+    # ============================================================
+    # LoRA/Turbo Models
+    # ============================================================
+    
+    prunaai/z-image-turbo-lora:
+      display_name: "Z-Image Turbo LoRA"
+      description: "Fast image generation with LoRA support"
+      category: "image-generation"
+      # Non-media inputs (LoRA parameters)
+      # inputs:
+      #   lora_weights:
+      #     type: STRING
+      #     is_array: true
+      #   lora_scales:
+      #     type: FLOAT
+      #     is_array: true
+      # max_images: 5
+      # array_input_field: "images"
+
+# Fal.ai provider configuration
+falai:
+  description: "Models from Fal.ai"
+  # Note: Standard parameters are defined in global_parameters.yaml
+  
+  models:
+    fal-ai/flux-2/klein/9b/edit:
+      display_name: "FLUX.2 [klein] 9B Edit"
+      description: "Image editing with FLUX.2 Klein"
+      category: "image-editing"
+      max_images: 4
+      inputs:
+        image_urls:
+          is_array: true
+          is_optional: true
+
+    fal-ai/seedvr/upscale/image:
+      display_name: "SeedVR Upscale Image"
+      description: "Image upscaling with SeedVR"
+      category: "image-upscaling"
+
+# HuggingFace provider configuration
+huggingface:
+  description: "Models from HuggingFace"
+  # Note: Standard parameters are defined in global_parameters.yaml
+  # Inputs are auto-detected from global_inputs.yaml
+  
+  repos:
+    renderartist/Technically-Color-Z-Image-Turbo:
+      display_name: "Color Z Image Turbo"
+      description: "Colorization with style transfer"
+      category: "image-processing"
+
+    starsfriday/FLUX.2-klein-AC-Style-LORA:
+      display_name: "AC Style LORA"
+      description: "Anime/Comic style LoRA for FLUX"
+      category: "image-generation"
+      max_images: 5
+
+    Papina/Lora-Characters:
+      display_name: "LORA Characters"
+      description: "Character style LoRA"
+      category: "image-generation"

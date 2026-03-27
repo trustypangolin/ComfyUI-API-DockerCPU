@@ -1,0 +1,14 @@
+# CPU build doesn't do local Image,Video,Audio gen, and relies entirely on APIs
+# However, we need torch to translate inputs from load image and so on into tensors and it's a
+# base requirement of ComfyUI
+
+# ComfyUI will use the nvidia (or AMD) versions by default, which won't work in a dumb VM
+# and are rather heavy in file size
+
+# So we cache these high versions instead, and hope custom node writers don't try to use
+# their own later versions
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.9.0
+torchvision==0.24.0
+torchaudio==2.9.0
