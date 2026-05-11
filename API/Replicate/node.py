@@ -36,14 +36,11 @@ from .schema_to_node import (
     inputs_that_need_arrays,
     get_max_images,
     get_array_input_mapping,
+    get_model_config_override,
 )
 from common.output_handlers import handle_image_output as _handle_image_output
 from common.output_handlers import handle_audio_output as _handle_audio_output
 from common.input_handlers import handle_array_inputs as _handle_array_inputs
-from common.input_handlers import handle_array_inputs as _handle_array_inputs
-from common.input_handlers import handle_array_inputs as _handle_array_inputs
-from common.output_handlers import handle_image_output as _handle_image_output
-from common.output_handlers import handle_audio_output as _handle_audio_output
 
 # Initialize Replicate client
 _replicate_client = None
@@ -104,11 +101,31 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
 
         def convert_input_images_to_base64(self, kwargs):
             """Convert image tensors to base64 data URIs."""
-            for key, value in kwargs.items():
+            input_types = self.INPUT_TYPES()
+            for key, value in list(kwargs.items()):
                 if value is None:
                     continue
                 
-                # Check for tensor inputs
+                # Check input type mapping
+                input_type = (
+                    input_types.get("required", {}).get(key, (None,))[0]
+                    or input_types.get("optional", {}).get(key, (None,))[0]
+                )
+                
+                if input_type in ("IMAGE", "AUDIO"):
+                    if input_type == "IMAGE":
+                        if isinstance(value, torch.Tensor):
+                            kwargs[key] = self._image_to_base64(value)
+                        elif isinstance(value, list) and value and isinstance(value[0], torch.Tensor):
+                            kwargs[key] = [self._image_to_base64(item) for item in value]
+                        continue
+                    
+                    if input_type == "AUDIO":
+                        if isinstance(value, dict) or (isinstance(value, (list, tuple)) and len(value) == 2):
+                            kwargs[key] = self._audio_to_base64(value)
+                        continue
+                    
+                # Check for tensor inputs (legacy fallback)
                 if isinstance(value, torch.Tensor):
                     kwargs[key] = self._image_to_base64(value)
                     continue
@@ -117,23 +134,6 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
                 if isinstance(value, list) and any(isinstance(item, torch.Tensor) for item in value):
                     kwargs[key] = [self._image_to_base64(item) for item in value]
                     continue
-                
-                # Check input type mapping
-                input_type = (
-                    self.INPUT_TYPES().get("required", {}).get(key, (None,))[0]
-                    or self.INPUT_TYPES().get("optional", {}).get(key, (None,))[0]
-                )
-                
-                if input_type == "IMAGE":
-                    if isinstance(value, list):
-                        kwargs[key] = [self._image_to_base64(item) for item in value]
-                    else:
-                        kwargs[key] = self._image_to_base64(value)
-                elif input_type == "AUDIO":
-                    if isinstance(value, list):
-                        kwargs[key] = [self._audio_to_base64(item) for item in value]
-                    else:
-                        kwargs[key] = self._audio_to_base64(value)
 
         def _image_to_base64(self, image):
             """Convert image tensor to base64 data URI."""
@@ -270,6 +270,37 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
 
             if split_inputs:
                 kwargs[array_input_name] = split_inputs
+        
+        def get_original_field_name(self, alias_name: str, schema: Dict) -> str:
+            """
+            Get the original schema field name from an alias.
+            
+            ComfyUI uses aliases like 'IMAGE' instead of 'image' for the UI,
+            but the API expects the original field names.
+            """
+            # Get the schema properties
+            openapi_schema = schema.get("latest_version", {}).get("openapi_schema", {})
+            components = openapi_schema.get("components", {})
+            schemas_list = components.get("schemas", {})
+            input_schema = schemas_list.get("Input", {})
+            props = input_schema.get("properties", {})
+            
+            # Check if alias matches a property name (case-insensitive)
+            alias_lower = alias_name.lower()
+            for prop_name in props.keys():
+                if prop_name.lower() == alias_lower:
+                    return prop_name
+            
+            # Check for array input field mapping
+            model_config = get_model_config_override(replicate_model)
+            if model_config:
+                inputs_config = model_config.get('inputs', {})
+                for field_name, field_config in inputs_config.items():
+                    if isinstance(field_config, dict) and field_config.get('alias') == alias_name:
+                        return field_name
+            
+            # No mapping found, return original
+            return alias_name
 
         def handle_image_output(self, output):
             """Process image output from API."""
@@ -278,28 +309,12 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
         def handle_audio_output(self, output):
             """Process audio output from API."""
             return _handle_audio_output(output)
-            try:
-                if "," in base64_str:
-                    base64_data = base64_str.split(",", 1)[1]
-                else:
-                    base64_data = base64_str
-
-                image_data = base64.b64decode(base64_data, validate=True)
-                image = Image.open(BytesIO(image_data))
-                if image.mode != "RGB":
-                    image = image.convert("RGB")
-
-                transform = transforms.ToTensor()
-                tensor_image = transform(image)
-                tensor_image = tensor_image.unsqueeze(0)
-                tensor_image = tensor_image.permute(0, 2, 3, 1).cpu().float()
-                return tensor_image
-            except Exception as e:
-                print(f"Error converting base64 to tensor: {e}")
-                return None
 
         def run_model(self, **kwargs):
             """Execute the model or return debug data."""
+            # Store schema reference in a way the inner method can access
+            _schema = schema
+            
             # Extract dry_run flag
             dry_run_mode = kwargs.pop("dry_run", False)
 
@@ -309,14 +324,20 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
             self.combine_split_image_inputs(kwargs)
             self.convert_input_images_to_base64(kwargs)
 
-            # Log inputs
-            self._log_input(kwargs)
-
-            # Remove special parameters from API call
+            # Remap alias keys back to original schema field names for API call
+            remapped_kwargs = {}
+            for key, value in kwargs.items():
+                original_key = self.get_original_field_name(key, _schema)
+                remapped_kwargs[original_key] = value
+            
+            # Use remapped kwargs for API call
             kwargs_for_api = {
-                k: v for k, v in kwargs.items()
+                k: v for k, v in remapped_kwargs.items()
                 if k not in ["force_rerun", "dry_run"]
             }
+
+            # Log inputs
+            self._log_input(kwargs)
 
             # Prepare JSON output - truncate base64 data to just the header
             def truncate_base64(obj):

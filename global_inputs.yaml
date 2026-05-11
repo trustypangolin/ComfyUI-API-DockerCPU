@@ -95,6 +95,19 @@ replicate_api:
       is_array: false
       required: false
       description: "Video input - connect from Video node"
+      
+    # Pattern: Mixed media input (image or video)
+    media_input:
+      field_match:
+        name_patterns:
+          - "media"
+        type: string
+        format: uri
+      comfyui_type: IMAGE
+      alias: "IMAGE"
+      is_array: false
+      required: false
+      description: "Media input (image or video) - connect from LoadImage or Video node"
 
 # ============================================
 # FalAi API INPUT Patterns
