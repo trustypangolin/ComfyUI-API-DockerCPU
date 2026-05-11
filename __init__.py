@@ -77,11 +77,16 @@ if not _is_test_context():
         NODE_CLASS_MAPPINGS as HF_NODE_CLASS_MAPPINGS,
         NODE_DISPLAY_NAME_MAPPINGS as HF_NODE_DISPLAY_NAME_MAPPINGS,
     )
+    from .common.amd_tools import (
+        NODE_CLASS_MAPPINGS as AMD_NODE_CLASS_MAPPINGS,
+        NODE_DISPLAY_NAME_MAPPINGS as AMD_NODE_DISPLAY_NAME_MAPPINGS,
+    )
 
     # Create node mappings from each API
     _replicate_nodes = {}
     _falai_nodes = {}
     _huggingface_nodes = {}
+    _amd_nodes = {}
 
     # Try to load nodes (may fail if schemas not present)
     try:
@@ -99,11 +104,18 @@ if not _is_test_context():
     except Exception as e:
         print(f"[ComfyUI-API-DockerCPU] Warning: Could not load HuggingFace nodes: {e}")
 
+    # Load AMD tools (applies GPU patch at import time)
+    try:
+        _amd_nodes = AMD_NODE_CLASS_MAPPINGS
+    except Exception as e:
+        print(f"[ComfyUI-API-DockerCPU] Warning: Could not load AMD tools: {e}")
+
     # Combine all node mappings
     NODE_CLASS_MAPPINGS = {}
     NODE_CLASS_MAPPINGS.update(_replicate_nodes)
     NODE_CLASS_MAPPINGS.update(_falai_nodes)
     NODE_CLASS_MAPPINGS.update(_huggingface_nodes)
+    NODE_CLASS_MAPPINGS.update(_amd_nodes)
 
     # Display loaded nodes
     if NODE_CLASS_MAPPINGS:
@@ -111,6 +123,7 @@ if not _is_test_context():
         print(f"  - Replicate: {len(_replicate_nodes)} nodes")
         print(f"  - Fal.ai: {len(_falai_nodes)} nodes")
         print(f"  - HuggingFace: {len(_huggingface_nodes)} nodes")
+        print(f"  - AMD Tools: {len(_amd_nodes)} nodes")
     else:
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
 
@@ -126,6 +139,7 @@ else:
     _replicate_nodes = {}
     _falai_nodes = {}
     _huggingface_nodes = {}
+    _amd_nodes = {}
 
 __all__ = [
     "NODE_CLASS_MAPPINGS",
