@@ -6,14 +6,9 @@ Direct copy of the SaveVideo node with the AMD GPU audio fix applied.
 Fix: .float().numpy() -> .float().cpu().numpy() in video_types.py
 """
 
-from __future__ import annotations
-
 import os
-import re
 import torch
 import folder_paths
-from fractions import Fraction
-from comfy_api.latest import ComfyExtension, io, ui, Input
 from comfy.cli_args import args
 
 
@@ -42,27 +37,33 @@ def _apply_amd_gpu_patch():
 _apply_amd_gpu_patch()
 
 
-class SaveAMDVideo(io.ComfyNode):
+class SaveAMDVideo:
     @classmethod
-    def define_schema(cls):
-        return io.Schema(
-            node_id="SaveAMDVideo",
-            display_name="Save AMD Video",
-            category="image/video",
-            essentials_category="Basics",
-            description="Saves the input video to your ComfyUI output directory. Includes AMD GPU audio fix.",
-            inputs=[
-                io.Video.Input("video", tooltip="The video to save."),
-                io.String.Input("filename_prefix", default="video/ComfyUI", tooltip="The prefix for the file to save."),
-                io.Combo.Input("format", options=io.Types.VideoContainer.as_input(), default="auto", tooltip="The format to save the video as."),
-                io.Combo.Input("codec", options=io.Types.VideoCodec.as_input(), default="auto", tooltip="The codec to use for the video."),
-            ],
-            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
-            is_output_node=True,
-        )
+    def INPUT_TYPES(cls):
+        from comfy_api.latest import Types
+        return {
+            "required": {
+                "video": ("VIDEO", {"tooltip": "The video to save."}),
+                "filename_prefix": ("STRING", {"default": "video/ComfyUI", "tooltip": "The prefix for the file to save."}),
+                "format": (Types.VideoContainer.as_input(), {"default": "auto", "tooltip": "The format to save the video as."}),
+                "codec": (Types.VideoCodec.as_input(), {"default": "auto", "tooltip": "The codec to use for the video."}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
+            },
+        }
 
-    @classmethod
-    def execute(cls, video: Input.Video, filename_prefix, format: str, codec) -> io.NodeOutput:
+    RETURN_TYPES = ()
+    FUNCTION = "save_video"
+    OUTPUT_NODE = True
+
+    CATEGORY = "image/video"
+    DESCRIPTION = "Saves the input video to your ComfyUI output directory. Includes AMD GPU audio fix."
+
+    def save_video(self, video, filename_prefix, format, codec, prompt=None, extra_pnginfo=None):
+        from comfy_api.latest import Types
+
         width, height = video.get_dimensions()
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
             filename_prefix,
@@ -73,21 +74,32 @@ class SaveAMDVideo(io.ComfyNode):
         saved_metadata = None
         if not args.disable_metadata:
             metadata = {}
-            if cls.hidden.extra_pnginfo is not None:
-                metadata.update(cls.hidden.extra_pnginfo)
-            if cls.hidden.prompt is not None:
-                metadata["prompt"] = cls.hidden.prompt
+            if extra_pnginfo is not None:
+                metadata.update(extra_pnginfo)
+            if prompt is not None:
+                metadata["prompt"] = prompt
             if len(metadata) > 0:
                 saved_metadata = metadata
-        file = f"{filename}_{counter:05}_.{io.Types.VideoContainer.get_extension(format)}"
+        file = f"{filename}_{counter:05}_.{Types.VideoContainer.get_extension(format)}"
         video.save_to(
             os.path.join(full_output_folder, file),
-            format=io.Types.VideoContainer(format),
+            format=Types.VideoContainer(format),
             codec=codec,
             metadata=saved_metadata
         )
 
-        return io.NodeOutput(ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, io.FolderType.output)]))
+        return {
+            "ui": {
+                "images": [
+                    {
+                        "filename": file,
+                        "subfolder": subfolder,
+                        "type": "output",
+                    }
+                ],
+                "animated": (True,),
+            },
+        }
 
 
 NODE_CLASS_MAPPINGS = {

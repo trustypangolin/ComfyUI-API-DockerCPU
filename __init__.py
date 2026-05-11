@@ -77,10 +77,6 @@ if not _is_test_context():
         NODE_CLASS_MAPPINGS as HF_NODE_CLASS_MAPPINGS,
         NODE_DISPLAY_NAME_MAPPINGS as HF_NODE_DISPLAY_NAME_MAPPINGS,
     )
-    from .common.amd_tools import (
-        NODE_CLASS_MAPPINGS as AMD_NODE_CLASS_MAPPINGS,
-        NODE_DISPLAY_NAME_MAPPINGS as AMD_NODE_DISPLAY_NAME_MAPPINGS,
-    )
 
     # Create node mappings from each API
     _replicate_nodes = {}
@@ -106,7 +102,13 @@ if not _is_test_context():
 
     # Load AMD tools (applies GPU patch at import time)
     try:
+        from .common.amd_tools import (
+            NODE_CLASS_MAPPINGS as AMD_NODE_CLASS_MAPPINGS,
+            NODE_DISPLAY_NAME_MAPPINGS as AMD_NODE_DISPLAY_NAME_MAPPINGS,
+        )
         _amd_nodes = AMD_NODE_CLASS_MAPPINGS
+        if AMD_NODE_DISPLAY_NAME_MAPPINGS:
+            NODE_DISPLAY_NAME_MAPPINGS.update(AMD_NODE_DISPLAY_NAME_MAPPINGS)
     except Exception as e:
         print(f"[ComfyUI-API-DockerCPU] Warning: Could not load AMD tools: {e}")
 
