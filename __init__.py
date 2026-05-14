@@ -100,6 +100,9 @@ if not _is_test_context():
     except Exception as e:
         print(f"[ComfyUI-API-DockerCPU] Warning: Could not load HuggingFace nodes: {e}")
 
+# Initialize display name mappings
+    NODE_DISPLAY_NAME_MAPPINGS = {}
+
     # Load AMD tools (applies GPU patch at import time)
     try:
         from .common.amd_tools import (
@@ -130,7 +133,6 @@ if not _is_test_context():
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
 
     # Display name mappings
-    NODE_DISPLAY_NAME_MAPPINGS = {}
     if _huggingface_nodes:
         from .API.HuggingFace import NODE_DISPLAY_NAME_MAPPINGS as HF_DISPLAY
         NODE_DISPLAY_NAME_MAPPINGS.update(HF_DISPLAY)
