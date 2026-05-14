@@ -8,6 +8,7 @@ Provides common utilities for:
 """
 
 from io import BytesIO
+import zipfile
 from typing import Optional, Union, List, Dict, Any
 
 import torch
@@ -21,10 +22,11 @@ def handle_image_output(output) -> Optional[torch.Tensor]:
     Process image output from API.
     
     Converts file-like objects or lists of file-like objects to tensors.
+    Supports ZIP archives containing multiple PNG images.
     
     Args:
         output: Single file-like object or list of file-like objects
-                containing image data
+                containing image data or ZIP archives
                 
     Returns:
         torch.Tensor in BxHxWxC format, or None if output is empty
@@ -35,10 +37,10 @@ def handle_image_output(output) -> Optional[torch.Tensor]:
         >>> tensor.shape
         torch.Size([1, 512, 512, 3])
         
-        >>> # Multiple images
-        >>> tensor = handle_image_output([file_obj1, file_obj2])
+        >>> # ZIP with multiple images
+        >>> tensor = handle_image_output(zip_file_obj)
         >>> tensor.shape
-        torch.Size([2, 512, 512, 3])
+        torch.Size([3, 512, 512, 3])  # 3 images from ZIP
     """
     if output is None:
         return None
@@ -51,17 +53,35 @@ def handle_image_output(output) -> Optional[torch.Tensor]:
     transform = transforms.ToTensor()
     
     for file_obj in output_list:
+        file_obj.seek(0)
         image_data = file_obj.read()
-        image = Image.open(BytesIO(image_data))
-        if image.mode != "RGB":
-            image = image.convert("RGB")
+        
+        # Check if this is a ZIP archive
+        if zipfile.is_zipfile(BytesIO(image_data)):
+            # Extract PNG files from ZIP
+            with zipfile.ZipFile(BytesIO(image_data), 'r') as zf:
+                png_files = [f for f in zf.namelist() if f.lower().endswith('.png')]
+                for png_file in sorted(png_files):  # Sort for consistent ordering
+                    with zf.open(png_file) as img_file:
+                        image = Image.open(img_file)
+                        if image.mode != "RGB":
+                            image = image.convert("RGB")
+                        tensor_image = transform(image)
+                        tensor_image = tensor_image.unsqueeze(0)
+                        tensor_image = tensor_image.permute(0, 2, 3, 1).cpu().float()
+                        output_tensors.append(tensor_image)
+        else:
+            # Single image
+            image = Image.open(BytesIO(image_data))
+            if image.mode != "RGB":
+                image = image.convert("RGB")
 
-        tensor_image = transform(image)
-        tensor_image = tensor_image.unsqueeze(0)
-        tensor_image = tensor_image.permute(0, 2, 3, 1).cpu().float()
-        output_tensors.append(tensor_image)
+            tensor_image = transform(image)
+            tensor_image = tensor_image.unsqueeze(0)
+            tensor_image = tensor_image.permute(0, 2, 3, 1).cpu().float()
+            output_tensors.append(tensor_image)
 
-    return torch.cat(output_tensors, dim=0) if len(output_tensors) > 1 else output_tensors[0]
+    return torch.cat(output_tensors, dim=0) if len(output_tensors) > 1 else (output_tensors[0] if output_tensors else None)
 
 
 def handle_audio_output(output) -> Optional[Union[Dict, List[Dict]]]:

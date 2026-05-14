@@ -134,14 +134,18 @@ replicate:
       category: "image-upscaling"
 
     sczhou/codeformer:
-       display_name: "CodeFormer"
-       description: "Face restoration and enhancement"
-       category: "face-restoration"
+      display_name: "CodeFormer"
+      description: "Face restoration and enhancement"
+      category: "face-restoration"
 
     mattsays/sam3-image:
-       display_name: "SAM3 Image"
-       description: "A unified foundation model for prompt-based segmentation in images and videos"
-       category: "image-segmentation"
+      display_name: "SAM3 Image"
+      description: "A unified foundation model for prompt-based segmentation in images and videos"
+      category: "image-segmentation"
+      outputs:
+        Output:
+          type: IMAGE
+          alias: mask
 
     # ============================================================
     # Video/Audio Models

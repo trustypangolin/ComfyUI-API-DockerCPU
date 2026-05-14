@@ -196,6 +196,9 @@ FILE_EXTENSION_TO_TYPE = {
     ".bmp": "IMAGE",
     ".tiff": "IMAGE",
 
+    # Archive formats containing images (ZIP with mask images)
+    ".zip": "IMAGE",
+
     # Audio extensions
     ".mp3": "AUDIO",
     ".wav": "AUDIO",
