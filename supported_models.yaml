@@ -147,6 +147,18 @@ replicate:
           type: IMAGE
           alias: mask
 
+    lucataco/qwen3-vl-8b-instruct:
+      display_name: "Qwen3-VL-8B Instruct"
+      description: "Multimodal vision-language model for image and video understanding"
+      category: "image-understanding"
+      outputs:
+        output:
+          type: STRING
+      inputs:
+        media:
+          is_array: false
+
+
     # ============================================================
     # Video/Audio Models
     # ============================================================

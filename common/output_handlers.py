@@ -10,11 +10,47 @@ Provides common utilities for:
 from io import BytesIO
 import zipfile
 from typing import Optional, Union, List, Dict, Any
+import urllib.request
 
 import torch
 from torchvision import transforms
 import torchaudio
 from PIL import Image
+
+
+def _get_file_content(file_obj):
+    """
+    Get content from various file-like objects.
+    
+    Handles:
+    - FileOutput objects from Replicate (have .read() method)
+    - Standard file objects (have .seek() and .read())
+    - Bytes directly
+    
+    Returns bytes or None.
+    """
+    # Check if it's a FileOutput-like object (has read but no seek)
+    if hasattr(file_obj, 'read') and not hasattr(file_obj, 'seek'):
+        return file_obj.read()
+    
+    # Standard file object - reset position and read
+    if hasattr(file_obj, 'seek') and hasattr(file_obj, 'read'):
+        file_obj.seek(0)
+        return file_obj.read()
+    
+    # Already bytes
+    if isinstance(file_obj, bytes):
+        return file_obj
+    
+    # String URL - fetch content
+    if isinstance(file_obj, str):
+        try:
+            with urllib.request.urlopen(file_obj) as response:
+                return response.read()
+        except Exception:
+            return None
+    
+    return None
 
 
 def handle_image_output(output) -> Optional[torch.Tensor]:
@@ -53,9 +89,10 @@ def handle_image_output(output) -> Optional[torch.Tensor]:
     transform = transforms.ToTensor()
     
     for file_obj in output_list:
-        file_obj.seek(0)
-        image_data = file_obj.read()
-        
+        image_data = _get_file_content(file_obj)
+        if image_data is None:
+            continue
+            
         # Check if this is a ZIP archive
         if zipfile.is_zipfile(BytesIO(image_data)):
             # Extract PNG files from ZIP

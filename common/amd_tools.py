@@ -58,7 +58,7 @@ class SaveAMDVideo:
     FUNCTION = "save_video"
     OUTPUT_NODE = True
 
-    CATEGORY = "image/video"
+    CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Saves the input video to your ComfyUI output directory. Includes AMD GPU audio fix."
 
     def save_video(self, video, filename_prefix, format, codec, prompt=None, extra_pnginfo=None):
