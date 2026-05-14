@@ -1,0 +1,325 @@
+{
+    "cover_image_url": null,
+    "created_at": "2026-01-03T21:57:11.967731Z",
+    "default_example": {
+        "completed_at": "2026-01-03T22:51:59.131591Z",
+        "created_at": "2026-01-03T22:50:50.408000Z",
+        "data_removed": false,
+        "error": null,
+        "id": "q7ehbfvan1rmy0cvgr7btvn0d0",
+        "input": {
+            "image": "https://replicate.delivery/pbxt/OLiTVqA6MghjGm2H0q3EZMCQSxn63ZZl5rKlCy719bEHhMsD/pexels-godisable-jacob-226636-794064.jpg",
+            "prompt": "clothes",
+            "mask_only": false,
+            "threshold": 0.5,
+            "mask_color": "green",
+            "return_zip": true,
+            "mask_opacity": 0.5,
+            "save_overlay": false
+        },
+        "is_free_trial_prediction": false,
+        "logs": "Processing image: /tmp/tmpvc4tkcugpexels-godisable-jacob-226636-794064.jpg\nAdding text prompt: 'clothes'\nInput keys: ['pixel_values', 'original_sizes', 'input_ids', 'attention_mask']\npixel_values: shape=torch.Size([1, 3, 1008, 1008]), dtype=torch.float32\n  original_sizes: shape=torch.Size([1, 2]), dtype=torch.int64\n  input_ids: shape=torch.Size([1, 32]), dtype=torch.int64\n  attention_mask: shape=torch.Size([1, 32]), dtype=torch.int64\nRunning inference on cuda with torch.bfloat16...\nInference complete!\nFound 2 objects",
+        "metrics": {
+            "predict_time": 1.421280358,
+            "total_time": 68.723591622
+        },
+        "model": "mattsays/sam3-image",
+        "output": "https://replicate.delivery/xezq/8eFzHyIPkoVekEEC9kMznvRZaQmopPvT1tB8pcQA6pyPepzrA/output.zip",
+        "source": "web",
+        "started_at": "2026-01-03T22:51:57.710311Z",
+        "status": "succeeded",
+        "urls": {
+            "stream": "https://stream.replicate.com/v1/files/jbxs-ruf3j6z6hc3btrvksbbko32bbyrsdpkc6elqdfmxrlqdsitorp5q",
+            "get": "https://api.replicate.com/v1/predictions/q7ehbfvan1rmy0cvgr7btvn0d0",
+            "cancel": "https://api.replicate.com/v1/predictions/q7ehbfvan1rmy0cvgr7btvn0d0/cancel"
+        },
+        "version": "d73db077226443ba4fafd34e233b3626b552eac2a433f90c7c32a9ac89bd9e72"
+    },
+    "description": "A unified foundation model for prompt-based segmentation in images and videos",
+    "github_url": null,
+    "latest_version": {
+        "id": "d73db077226443ba4fafd34e233b3626b552eac2a433f90c7c32a9ac89bd9e72",
+        "created_at": "2026-01-03T22:40:51.059207Z",
+        "cog_version": "0.16.9",
+        "openapi_schema": {
+            "info": {
+                "title": "Cog",
+                "version": "0.1.0"
+            },
+            "paths": {},
+            "openapi": "3.0.2",
+            "components": {
+                "schemas": {
+                    "Input": {
+                        "type": "object",
+                        "title": "Input",
+                        "required": [
+                            "image"
+                        ],
+                        "properties": {
+                            "image": {
+                                "type": "string",
+                                "title": "Image",
+                                "format": "uri",
+                                "x-order": 0,
+                                "description": "Input image file"
+                            },
+                            "prompt": {
+                                "type": "string",
+                                "title": "Prompt",
+                                "default": "person",
+                                "x-order": 1,
+                                "description": "Text prompt for segmentation"
+                            },
+                            "mask_only": {
+                                "type": "boolean",
+                                "title": "Mask Only",
+                                "default": false,
+                                "x-order": 4,
+                                "description": "If True, returns a black-and-white mask image instead of an overlay on the original image"
+                            },
+                            "threshold": {
+                                "type": "number",
+                                "title": "Threshold",
+                                "default": 0.5,
+                                "maximum": 1,
+                                "minimum": 0,
+                                "x-order": 2,
+                                "description": "Confidence threshold for object detection"
+                            },
+                            "mask_color": {
+                                "type": "string",
+                                "title": "Mask Color",
+                                "default": "green",
+                                "x-order": 7,
+                                "description": "Color of the mask overlay. Options: 'green', 'red', 'blue', 'yellow', 'cyan', 'magenta'"
+                            },
+                            "return_zip": {
+                                "type": "boolean",
+                                "title": "Return Zip",
+                                "default": true,
+                                "x-order": 5,
+                                "description": "If True, returns a ZIP file containing individual masks as PNGs"
+                            },
+                            "mask_opacity": {
+                                "type": "number",
+                                "title": "Mask Opacity",
+                                "default": 0.5,
+                                "maximum": 1,
+                                "minimum": 0,
+                                "x-order": 6,
+                                "description": "Opacity of the mask overlay (0.0 to 1.0)"
+                            },
+                            "save_overlay": {
+                                "type": "boolean",
+                                "title": "Save Overlay",
+                                "default": false,
+                                "x-order": 3,
+                                "description": "If True, includes the overlay image in the ZIP file"
+                            }
+                        }
+                    },
+                    "Output": {
+                        "type": "string",
+                        "title": "Output",
+                        "format": "uri"
+                    },
+                    "Status": {
+                        "enum": [
+                            "starting",
+                            "processing",
+                            "succeeded",
+                            "canceled",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "title": "Status",
+                        "description": "An enumeration."
+                    },
+                    "WebhookEvent": {
+                        "enum": [
+                            "start",
+                            "output",
+                            "logs",
+                            "completed"
+                        ],
+                        "type": "string",
+                        "title": "WebhookEvent",
+                        "description": "An enumeration."
+                    },
+                    "ValidationError": {
+                        "type": "object",
+                        "title": "ValidationError",
+                        "required": [
+                            "loc",
+                            "msg",
+                            "type"
+                        ],
+                        "properties": {
+                            "loc": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                },
+                                "title": "Location"
+                            },
+                            "msg": {
+                                "type": "string",
+                                "title": "Message"
+                            },
+                            "type": {
+                                "type": "string",
+                                "title": "Error Type"
+                            }
+                        }
+                    },
+                    "PredictionRequest": {
+                        "type": "object",
+                        "title": "PredictionRequest",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "context": {
+                                "type": "object",
+                                "title": "Context",
+                                "nullable": true,
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "webhook": {
+                                "type": "string",
+                                "title": "Webhook",
+                                "format": "uri",
+                                "nullable": true,
+                                "maxLength": 65536,
+                                "minLength": 1
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "output_file_prefix": {
+                                "type": "string",
+                                "title": "Output File Prefix",
+                                "nullable": true
+                            },
+                            "webhook_events_filter": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/WebhookEvent"
+                                },
+                                "default": [
+                                    "start",
+                                    "output",
+                                    "logs",
+                                    "completed"
+                                ],
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "PredictionResponse": {
+                        "type": "object",
+                        "title": "PredictionResponse",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "title": "Id",
+                                "nullable": true
+                            },
+                            "logs": {
+                                "type": "string",
+                                "title": "Logs",
+                                "default": ""
+                            },
+                            "error": {
+                                "type": "string",
+                                "title": "Error",
+                                "nullable": true
+                            },
+                            "input": {
+                                "$ref": "#/components/schemas/Input",
+                                "nullable": true
+                            },
+                            "output": {
+                                "$ref": "#/components/schemas/Output"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status",
+                                "nullable": true
+                            },
+                            "metrics": {
+                                "type": "object",
+                                "title": "Metrics",
+                                "nullable": true,
+                                "additionalProperties": true
+                            },
+                            "version": {
+                                "type": "string",
+                                "title": "Version",
+                                "nullable": true
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "title": "Created At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "started_at": {
+                                "type": "string",
+                                "title": "Started At",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "completed_at": {
+                                "type": "string",
+                                "title": "Completed At",
+                                "format": "date-time",
+                                "nullable": true
+                            }
+                        }
+                    },
+                    "HTTPValidationError": {
+                        "type": "object",
+                        "title": "HTTPValidationError",
+                        "properties": {
+                            "detail": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                },
+                                "title": "Detail"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "license_url": null,
+    "name": "sam3-image",
+    "owner": "mattsays",
+    "is_official": false,
+    "paper_url": null,
+    "run_count": 0,
+    "url": "https://replicate.com/mattsays/sam3-image",
+    "visibility": "public",
+    "weights_url": null
+}
