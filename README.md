@@ -10,6 +10,12 @@ This package combines multiple external API integrations into a single ComfyUI e
 - **Fal.ai API** (`🎨 DockerCPU API/🎨 FalAi`) - Run models from Fal.ai
 - **HuggingFace Hub** (`🎨 DockerCPU API/🤗 HuggingFace`) - Browse and select models from HuggingFace
 
+## Docker Deployment
+
+This custom node is designed to be used in conjunction with **[ComfyUI_API-DockerContainer](https://github.com/trustypangolin/ComfyUI_API-DockerContainer)** — a Docker build that runs ComfyUI on systems without a dedicated GPU, such as virtual machines or CPU-only servers.
+
+All inference is offloaded to cloud APIs (Replicate, Fal.ai, HuggingFace), so no local GPU is required.
+
 ### Key Features
 
 - **DockerCPU Design**: No local model downloads. All inference runs externally via APIs.
@@ -158,31 +164,92 @@ python tests/test_schemas.py
 | `HF_TOKEN` | HuggingFace token | No (required for private repos) |
 | `DEBUG_API_TRUSTYPANGOLIN` | Enable debug output | No |
 
+### Utility Nodes
+
+Available in category: `🎨 DockerCPU API/Utilities`
+
+- **Load Image With Metadata** - Loads an image from the input folder and extracts embedded prompt, workflow, and EXIF metadata
+  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`
+- **Load ZIP Archive** - Load PNG images from a ZIP file URL or path
+- **Load Replicate Prediction** - Load output from a Replicate prediction by ID
+- **Save AMD Video** - Save video with AMD GPU audio fix patch
+- **Save Text With Filename** - Save text content to a file named after the source image
+  - Inputs: `text`, `base_dir`, `base_filename`, `replace_extension` (BOOLEAN), `extension` (STRING)
+
+## Supported Models
+
+### Replicate Models
+
+| Model ID | Display Name | Category | Description |
+|----------|-------------|----------|-------------|
+| `black-forest-labs/flux-2-klein-9b` | FLUX.2 [klein] 9B | image-generation | Fast, high-quality text-to-image generation |
+| `black-forest-labs/flux-2-klein-9b-base-lora` | FLUX.2 [klein] 9B Base LoRA | image-generation | Fast fine-tuned LoRA inference |
+| `black-forest-labs/flux-2-max` | FLUX.2 [max] | image-generation | Highest fidelity image model |
+| `black-forest-labs/flux-2-pro` | FLUX.2 [pro] | image-generation | Professional image generation |
+| `google/nano-banana` | Google Nano Banana | image-generation | Fast, high-quality text-to-image |
+| `google/nano-banana-pro` | Google Nano Banana Pro | image-generation | Pro version with more images |
+| `google/nano-banana-2` | Google Nano Banana 2 | image-generation | Extended version |
+| `openai/gpt-5` | OpenAI GPT-5 | image-understanding | Image-to-text generation for captions |
+| `lucataco/qwen3-vl-8b-instruct` | Qwen3-VL-8B Instruct | image-understanding | Multimodal vision-language model |
+| `mattsays/sam3-image` | SAM3 Image | image-segmentation | Prompt-based segmentation |
+| `papina/seedvr2` | SeedVR 2 | image-upscaling | Realistic vision enhancement |
+| `philz1337x/crystal-upscaler` | Crystal Upscaler | image-upscaling | High-quality image upscaler |
+| `topazlabs/image-upscale` | TopazLabs Image Upscale | image-upscaling | Professional image upscaling |
+| `sczhou/codeformer` | CodeFormer | face-restoration | Face restoration and enhancement |
+| `zsxkib/seedvr2` | SeedVR 2 Video | video-upscaling | Video upscaling |
+| `zsxkib/realistic-voice-cloning` | Realistic Voice Cloning | audio-processing | AI song covers with RVC voice models |
+| `prunaai/z-image-turbo-lora` | Z-Image Turbo LoRA | image-generation | Fast generation with LoRA support |
+| `tencentarc/gfpgan` | GFPGAN | face-restoration | Face restoration |
+
+### Fal.ai Models
+
+| Model ID | Display Name | Category | Description |
+|----------|-------------|----------|-------------|
+| `fal-ai/flux-2/klein/9b/edit` | FLUX.2 [klein] 9B Edit | image-editing | Image editing with FLUX.2 Klein |
+| `fal-ai/seedvr/upscale/image` | SeedVR Upscale Image | image-upscaling | Image upscaling with SeedVR |
+
+### HuggingFace Repos
+
+| Repo ID | Display Name | Category | Description |
+|---------|-------------|----------|-------------|
+| `renderartist/Technically-Color-Z-Image-Turbo` | Color Z Image Turbo | image-processing | Colorization with style transfer |
+| `starsfriday/FLUX.2-klein-AC-Style-LORA` | AC Style LORA | image-generation | Anime/Comic style LoRA for FLUX |
+| `Papina/Lora-Characters` | LORA Characters | image-generation | Character style LoRA |
+
 ## Directory Structure
 
 ```
 ComfyUI-API-DockerCPU/
-├── __init__.py                    # Main entry point
-├── pyproject.toml                 # ComfyUI Registry config
-├── requirements.txt               # Dependencies
-├── README.md                      # This file
+├── __init__.py                      # Main entry point
+├── pyproject.toml                   # ComfyUI Registry config
+├── requirements.txt                 # Dependencies
+├── README.md                        # This file
 │
-├── API/                           # API-specific implementations
+├── API/                             # API-specific implementations
 │   ├── Replicate/
-│   │   ├── node.py               # Dynamic node creation
-│   │   └── schema_to_node.py     # Schema parsing
+│   │   ├── node.py                  # Dynamic node creation
+│   │   └── schema_to_node.py        # Schema parsing
 │   ├── FalAi/
-│   │   ├── node.py               # Dynamic node creation
-│   │   └── schema_to_node.py     # Schema parsing
+│   │   ├── node.py                  # Dynamic node creation
+│   │   └── schema_to_node.py        # Schema parsing
 │   └── HuggingFace/
-│       └── node.py               # Model selector & utilities
+│       └── node.py                  # Model selector & utilities
 │
-├── common/                        # Shared utilities
-│   ├── utils.py                   # Image/audio conversion
-│   └── logger.py                  # Logging utilities
+├── common/                          # Shared utilities
+│   ├── utils.py                     # Image/audio conversion
+│   ├── logger.py                    # Logging utilities
+│   ├── zip_utils.py                 # ZIP archive loading
+│   ├── amd_tools.py                 # AMD GPU patch
+│   ├── image_utils.py               # Load Image With Metadata
+│   └── text_saver.py                # Save Text With Filename
 │
-└── tests/                         # Test suite
-    └── test_schemas.py            # Schema validation tests
+├── schemas/                         # API schema definitions
+│   ├── Replicate/*.json
+│   ├── FalAi/*.json
+│   └── HuggingFace/*.json
+│
+└── tests/                           # Test suite
+    └── test_schemas.py              # Schema validation tests
 ```
 
 ## License
