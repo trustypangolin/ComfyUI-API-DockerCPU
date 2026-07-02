@@ -425,6 +425,19 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
             processed_outputs.append(input_json)
             return tuple(processed_outputs)
 
+        def _normalize_text_output(self, val):
+            """Normalize text output, handling strings, lists, tuples, and generators."""
+            if val is None:
+                return ""
+            if isinstance(val, str):
+                return val.strip()
+            if isinstance(val, (list, tuple)):
+                return "".join(str(item) for item in val).strip()
+            # Handle generators / iterators (e.g. streaming token output from Replicate)
+            if hasattr(val, "__iter__") and not isinstance(val, (bytes, dict)):
+                return "".join(str(item) for item in val).strip()
+            return str(val).strip()
+
         def _process_output(self, output, return_type):
             """Process API output into ComfyUI format."""
             processed_outputs = []
@@ -450,8 +463,8 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
                         if isinstance(output, dict):
                             val = output.get(prop_name, "")
                         else:
-                            val = str(output) if output else ""
-                        processed_outputs.append("".join(list(val)).strip() if isinstance(val, (list, tuple)) else str(val))
+                            val = output
+                        processed_outputs.append(self._normalize_text_output(val))
                     else:
                         if isinstance(output, dict):
                             processed_outputs.append(output.get(prop_name, ""))
@@ -463,8 +476,7 @@ def create_comfyui_node(schema: Dict) -> Tuple[str, type]:
                 elif return_type == "AUDIO":
                     processed_outputs.append(self.handle_audio_output(output))
                 else:
-                    val = output if isinstance(output, (list, tuple)) else str(output)
-                    processed_outputs.append("".join(list(val)).strip() if isinstance(val, (list, tuple)) else val)
+                    processed_outputs.append(self._normalize_text_output(output))
 
             return processed_outputs
 
