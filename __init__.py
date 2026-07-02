@@ -126,6 +126,28 @@ if not _is_test_context():
         ZIP_NODE_CLASS_MAPPINGS = {}
         ZIP_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+    # Load image utilities (Load Image With Metadata)
+    try:
+        from .common.image_utils import (
+            NODE_CLASS_MAPPINGS as IMAGE_UTILS_NODE_CLASS_MAPPINGS,
+            NODE_DISPLAY_NAME_MAPPINGS as IMAGE_UTILS_NODE_DISPLAY_NAME_MAPPINGS,
+        )
+    except Exception as e:
+        print(f"[ComfyUI-API-DockerCPU] Warning: Could not load image utilities: {e}")
+        IMAGE_UTILS_NODE_CLASS_MAPPINGS = {}
+        IMAGE_UTILS_NODE_DISPLAY_NAME_MAPPINGS = {}
+
+    # Load text saver utilities
+    try:
+        from .common.text_saver import (
+            NODE_CLASS_MAPPINGS as TEXT_SAVER_NODE_CLASS_MAPPINGS,
+            NODE_DISPLAY_NAME_MAPPINGS as TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS,
+        )
+    except Exception as e:
+        print(f"[ComfyUI-API-DockerCPU] Warning: Could not load text saver: {e}")
+        TEXT_SAVER_NODE_CLASS_MAPPINGS = {}
+        TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS = {}
+
     # Combine all node mappings
     NODE_CLASS_MAPPINGS = {}
     NODE_CLASS_MAPPINGS.update(_replicate_nodes)
@@ -133,6 +155,8 @@ if not _is_test_context():
     NODE_CLASS_MAPPINGS.update(_huggingface_nodes)
     NODE_CLASS_MAPPINGS.update(_amd_nodes)
     NODE_CLASS_MAPPINGS.update(ZIP_NODE_CLASS_MAPPINGS)
+    NODE_CLASS_MAPPINGS.update(IMAGE_UTILS_NODE_CLASS_MAPPINGS)
+    NODE_CLASS_MAPPINGS.update(TEXT_SAVER_NODE_CLASS_MAPPINGS)
 
     # Display loaded nodes
     if NODE_CLASS_MAPPINGS:
@@ -142,12 +166,20 @@ if not _is_test_context():
         print(f"  - HuggingFace: {len(_huggingface_nodes)} nodes")
         print(f"  - AMD Tools: {len(_amd_nodes)} nodes")
         print(f"  - Utilities: {len(ZIP_NODE_CLASS_MAPPINGS)} nodes")
+        print(f"  - Image Utils: {len(IMAGE_UTILS_NODE_CLASS_MAPPINGS)} nodes")
+        print(f"  - Text Saver: {len(TEXT_SAVER_NODE_CLASS_MAPPINGS)} nodes")
     else:
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
     
     # Display name mappings
     if ZIP_NODE_DISPLAY_NAME_MAPPINGS:
         NODE_DISPLAY_NAME_MAPPINGS.update(ZIP_NODE_DISPLAY_NAME_MAPPINGS)
+    
+    if IMAGE_UTILS_NODE_DISPLAY_NAME_MAPPINGS:
+        NODE_DISPLAY_NAME_MAPPINGS.update(IMAGE_UTILS_NODE_DISPLAY_NAME_MAPPINGS)
+    
+    if TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS:
+        NODE_DISPLAY_NAME_MAPPINGS.update(TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS)
     
     if _huggingface_nodes:
         from .API.HuggingFace import NODE_DISPLAY_NAME_MAPPINGS as HF_DISPLAY
