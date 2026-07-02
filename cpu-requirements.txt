@@ -8,14 +8,11 @@
 # So we cache these high versions instead, and hope custom node writers don't try to use
 # their own later versions
 
---extra-index-url https://download.pytorch.org/whl/cpu
-#torch==2.9.0
-#torchvision==0.24.0
-#torchaudio==2.9.0
+# The Dockerfile from the companion repo https://github.com/trustypangolin/ComfyUI_API-DockerContainer 
+# will do this for you, but if you are using this directly in your own install, 
+# Then you can pip install this file, or use your own nVidia/AMD ROCm version
 
-#torch==2.9.0
-#torchvision==0.24.0
-#torchaudio==2.9.0
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 torch
 torchvision
