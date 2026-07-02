@@ -138,10 +138,26 @@ replicate:
       description: "Face restoration and enhancement"
       category: "face-restoration"
 
-    tencentarc/gfpgan:
-      display_name: "GFPGAN"
-      description: "Face face-restoration tool"
-      category: "face-restoration"
+    mattsays/sam3-image:
+      display_name: "SAM3 Image"
+      description: "A unified foundation model for prompt-based segmentation in images and videos"
+      category: "image-segmentation"
+      outputs:
+        Output:
+          type: IMAGE
+          alias: mask
+
+    lucataco/qwen3-vl-8b-instruct:
+      display_name: "Qwen3-VL-8B Instruct"
+      description: "Multimodal vision-language model for image and video understanding"
+      category: "image-understanding"
+      outputs:
+        output:
+          type: STRING
+      inputs:
+        media:
+          is_array: false
+
 
     # ============================================================
     # Video/Audio Models
