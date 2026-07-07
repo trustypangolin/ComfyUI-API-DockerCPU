@@ -34,6 +34,43 @@ try:
 except ImportError:
     FOLDER_PATHS_AVAILABLE = False
 
+try:
+    from server import PromptServer
+    from aiohttp import web
+    ROUTES_AVAILABLE = True
+except ImportError:
+    PromptServer = None
+    web = None
+    ROUTES_AVAILABLE = False
+
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff", ".tif"}
+
+
+def _scan_folder_files(base_dir):
+    exclude_files = {
+        "Thumbs.db",
+        "*.DS_Store",
+        "desktop.ini",
+        "*.lock",
+        "*.txt",
+        "*.kra",
+    }
+    exclude_folders = {"clipspace", ".*"}
+
+    file_list = []
+    for root, dirs, files in os.walk(base_dir, followlinks=True):
+        dirs[:] = [d for d in dirs if not any(fnmatch.fnmatch(d, ex) for ex in exclude_folders)]
+        for file in files:
+            if any(fnmatch.fnmatch(file, ex) for ex in exclude_files):
+                continue
+            ext = os.path.splitext(file)[1].lower()
+            if ext not in IMAGE_EXTENSIONS:
+                continue
+            relpath = os.path.relpath(os.path.join(root, file), start=base_dir)
+            file_list.append(relpath.replace("\\", "/"))
+    return sorted(file_list)
+
 
 def _get_size(path):
     size = os.path.getsize(path)
@@ -141,40 +178,32 @@ class LoadImageWithMetadata:
             return {
                 "required": {
                     "image": ("STRING", {"default": "", "tooltip": "Path to image file"}),
+                    "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from"}),
                 },
             }
 
-        input_dir = folder_paths.get_input_directory()
-
-        exclude_files = {"Thumbs.db", "*.DS_Store", "desktop.ini", "*.lock"}
-        exclude_folders = {"clipspace", ".*"}
-
-        file_list = []
-
-        for root, dirs, files in os.walk(input_dir, followlinks=True):
-            dirs[:] = [d for d in dirs if not any(fnmatch.fnmatch(d, exclude) for exclude in exclude_folders)]
-            files = [f for f in files if not any(fnmatch.fnmatch(f, exclude) for exclude in exclude_files)]
-
-            for file in files:
-                relpath = os.path.relpath(os.path.join(root, file), start=input_dir)
-                relpath = relpath.replace("\\", "/")
-                file_list.append(relpath)
+        input_files = _scan_folder_files(folder_paths.get_input_directory())
 
         return {
             "required": {
-                "image": (sorted(file_list), {"image_upload": True})
+                "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from. The image dropdown is refreshed automatically."}),
+                "image": (input_files, {"image_upload": True}),
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK", "JSON", "METADATA_RAW", "STRING", "STRING")
-    RETURN_NAMES = ("image", "mask", "prompt", "Metadata RAW", "BASE_FILENAME", "BASE_DIR")
+    RETURN_TYPES = ("IMAGE", "MASK", "JSON", "METADATA_RAW", "STRING", "STRING", "INT", "INT", "FLOAT")
+    RETURN_NAMES = ("image", "mask", "prompt", "Metadata RAW", "BASE_FILENAME", "BASE_DIR", "height", "width", "megapixels")
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image from the input folder and extracts embedded prompt, workflow, and metadata."
 
-    def execute(self, image):
+    def execute(self, image, folder_type="input"):
         if folder_paths:
-            image_path = folder_paths.get_annotated_filepath(image)
+            if folder_type == "output":
+                base_dir = folder_paths.get_output_directory()
+                image_path = os.path.join(base_dir, image)
+            else:
+                image_path = folder_paths.get_annotated_filepath(image)
         else:
             image_path = image
 
@@ -191,6 +220,7 @@ class LoadImageWithMetadata:
                 prompt = {}
 
         img = ImageOps.exif_transpose(img)
+        width, height = img.size
         image = img.convert("RGB")
         image = np.array(image).astype(np.float32) / 255.0
         image = torch.from_numpy(image)[None,]
@@ -200,7 +230,9 @@ class LoadImageWithMetadata:
         else:
             mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
 
-        return image, mask.unsqueeze(0), prompt, metadata, base_filename, base_dir
+        megapixels = round((width * height) / 1_000_000.0, 4)
+
+        return image, mask.unsqueeze(0), prompt, metadata, base_filename, base_dir, height, width, megapixels
 
     def _process_webp_exif(self, exif_data, metadata):
         if '0th' in exif_data and 271 in exif_data['0th']:
@@ -223,9 +255,12 @@ class LoadImageWithMetadata:
         return metadata.get('prompt', {}), metadata
 
     @classmethod
-    def IS_CHANGED(cls, image):
+    def IS_CHANGED(cls, image, folder_type="input"):
         if folder_paths:
-            image_path = folder_paths.get_annotated_filepath(image)
+            if folder_type == "output":
+                image_path = os.path.join(folder_paths.get_output_directory(), image)
+            else:
+                image_path = folder_paths.get_annotated_filepath(image)
         else:
             image_path = image
         m = hashlib.sha256()
@@ -234,9 +269,13 @@ class LoadImageWithMetadata:
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(cls, image):
+    def VALIDATE_INPUTS(cls, image, folder_type="input"):
         if folder_paths:
-            if not folder_paths.exists_annotated_filepath(image):
+            if folder_type == "output":
+                image_path = os.path.join(folder_paths.get_output_directory(), image)
+            else:
+                image_path = folder_paths.get_annotated_filepath(image)
+            if not os.path.isfile(image_path):
                 return "Invalid image file: {}".format(image)
         elif not os.path.isfile(image):
             return "Invalid image file: {}".format(image)
@@ -250,3 +289,20 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithMetadata": "Load Image With Metadata",
 }
+
+
+if ROUTES_AVAILABLE:
+    @PromptServer.instance.routes.get("/dockercpu/load_image_with_metadata/files")
+    async def get_load_image_with_metadata_files(request):
+        folder_type = request.query.get("folder_type", "input")
+        if not FOLDER_PATHS_AVAILABLE:
+            return web.json_response({"error": "folder_paths unavailable", "files": []}, status=400)
+        if folder_type == "output":
+            base_dir = folder_paths.get_output_directory()
+        else:
+            base_dir = folder_paths.get_input_directory()
+        try:
+            files = _scan_folder_files(base_dir)
+            return web.json_response({"files": files, "folder_type": folder_type})
+        except Exception as e:
+            return web.json_response({"error": str(e), "files": []}, status=500)

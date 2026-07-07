@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-api-dockercpu"
-version = "1.0.0"
+version = "1.0.1"
 description = "Unified ComfyUI nodes for external API integration (Replicate, Fal.ai, HuggingFace)"
 readme = "README.md"
 license = {text = "MIT"}
@@ -29,6 +29,7 @@ dependencies = [
     "replicate>=1.0.7",
     "fal-client>=0.5.0",
     "huggingface_hub>=0.20.0",
+    "requests>=2.31.0",
     "soundfile>=0.12.0",
     "Pillow>=9.0.0",
     "piexif>=1.1.3",
