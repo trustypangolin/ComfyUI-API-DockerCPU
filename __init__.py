@@ -27,6 +27,8 @@ Usage:
 import os
 import sys
 
+WEB_DIRECTORY = "./web"
+
 # Detect if we're in a test context (pytest is running tests)
 # This allows the package to be imported without triggering ComfyUI-specific
 # relative imports that would fail outside the ComfyUI environment
@@ -148,6 +150,16 @@ if not _is_test_context():
         TEXT_SAVER_NODE_CLASS_MAPPINGS = {}
         TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+    try:
+        from .common.local_llm import (
+            NODE_CLASS_MAPPINGS as LOCAL_LLM_NODE_CLASS_MAPPINGS,
+            NODE_DISPLAY_NAME_MAPPINGS as LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS,
+        )
+    except Exception as e:
+        print(f"[ComfyUI-API-DockerCPU] Warning: Could not load Local LLM: {e}")
+        LOCAL_LLM_NODE_CLASS_MAPPINGS = {}
+        LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS = {}
+
     # Combine all node mappings
     NODE_CLASS_MAPPINGS = {}
     NODE_CLASS_MAPPINGS.update(_replicate_nodes)
@@ -157,6 +169,7 @@ if not _is_test_context():
     NODE_CLASS_MAPPINGS.update(ZIP_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(IMAGE_UTILS_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(TEXT_SAVER_NODE_CLASS_MAPPINGS)
+    NODE_CLASS_MAPPINGS.update(LOCAL_LLM_NODE_CLASS_MAPPINGS)
 
     # Display loaded nodes
     if NODE_CLASS_MAPPINGS:
@@ -168,6 +181,7 @@ if not _is_test_context():
         print(f"  - Utilities: {len(ZIP_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Image Utils: {len(IMAGE_UTILS_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Text Saver: {len(TEXT_SAVER_NODE_CLASS_MAPPINGS)} nodes")
+        print(f"  - Local LLM: {len(LOCAL_LLM_NODE_CLASS_MAPPINGS)} nodes")
     else:
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
     
@@ -180,6 +194,9 @@ if not _is_test_context():
     
     if TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS:
         NODE_DISPLAY_NAME_MAPPINGS.update(TEXT_SAVER_NODE_DISPLAY_NAME_MAPPINGS)
+
+    if LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS:
+        NODE_DISPLAY_NAME_MAPPINGS.update(LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS)
     
     if _huggingface_nodes:
         from .API.HuggingFace import NODE_DISPLAY_NAME_MAPPINGS as HF_DISPLAY
@@ -196,6 +213,7 @@ else:
 __all__ = [
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
+    "WEB_DIRECTORY",
 ]
 
 # Run tests if DEBUG_API_TRUSTYPANGOLIN is set
