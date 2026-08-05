@@ -1,0 +1,806 @@
+{
+  "id": "8af58aec-7a5e-4727-a393-477a0327a69a",
+  "revision": 0,
+  "last_node_id": 44,
+  "last_link_id": 63,
+  "nodes": [
+    {
+      "id": 26,
+      "type": "LoadImageWithMetadataCrop",
+      "pos": [
+        -1920,
+        -490
+      ],
+      "size": [
+        1310,
+        1870
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "original_image",
+          "type": "IMAGE",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "prompt",
+          "type": "JSON",
+          "links": null
+        },
+        {
+          "name": "Metadata RAW",
+          "type": "METADATA_RAW",
+          "links": null
+        },
+        {
+          "name": "BASE_FILENAME",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "BASE_DIR",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "crop_x",
+          "type": "INT",
+          "links": [
+            53
+          ]
+        },
+        {
+          "name": "crop_y",
+          "type": "INT",
+          "links": [
+            56
+          ]
+        },
+        {
+          "name": "crop_width",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "crop_height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "original_height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "original_width",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "zoom_factor",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "megapixels",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImageWithMetadataCrop"
+      },
+      "widgets_values": [
+        "input",
+        "Australian_water_dragon,_Roma_Street_Parkland,_Brisbane_2020-2-1.jpg",
+        360,
+        469,
+        645,
+        612,
+        "image",
+        null,
+        null,
+        ""
+      ]
+    },
+    {
+      "id": 18,
+      "type": "PreviewImage",
+      "pos": [
+        -580,
+        -490
+      ],
+      "size": [
+        210,
+        270
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            46
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 33,
+      "type": "ResizeImageMaskNode",
+      "pos": [
+        -290,
+        -440
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input",
+          "type": "IMAGE,MASK",
+          "link": 46
+        },
+        {
+          "name": "resize_type.multiplier",
+          "type": "FLOAT",
+          "widget": {
+            "name": "resize_type.multiplier"
+          },
+          "link": 63
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resized",
+          "type": "IMAGE",
+          "links": [
+            47
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ResizeImageMaskNode"
+      },
+      "widgets_values": [
+        "scale by multiplier",
+        2,
+        "area"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "ResizeImageMaskNode",
+      "pos": [
+        -290,
+        -290
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input",
+          "type": "IMAGE,MASK",
+          "link": 48
+        },
+        {
+          "name": "resize_type.multiplier",
+          "type": "FLOAT",
+          "widget": {
+            "name": "resize_type.multiplier"
+          },
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "resized",
+          "type": "IMAGE",
+          "links": [
+            49
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ResizeImageMaskNode"
+      },
+      "widgets_values": [
+        "scale by multiplier",
+        2,
+        "area"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -290,
+        -60
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 53
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 57
+        },
+        {
+          "label": "c",
+          "name": "values.c",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            60
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "a * b"
+      ]
+    },
+    {
+      "id": 43,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -290,
+        110
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 56
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 58
+        },
+        {
+          "label": "c",
+          "name": "values.c",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            61
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyMathExpression"
+      },
+      "widgets_values": [
+        "a * b"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "PreviewImage",
+      "pos": [
+        -580,
+        -180
+      ],
+      "size": [
+        210,
+        260
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            48
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 44,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -580,
+        130
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            57,
+            58,
+            59,
+            63
+          ]
+        }
+      ],
+      "title": "Upscale Multiplier",
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        2
+      ]
+    },
+    {
+      "id": 37,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        -180
+      ],
+      "size": [
+        210,
+        260
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            51
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 35,
+      "type": "PreviewImage",
+      "pos": [
+        40,
+        -490
+      ],
+      "size": [
+        210,
+        260
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            50
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 38,
+      "type": "ImageCompositeMasked",
+      "pos": [
+        320,
+        -180
+      ],
+      "size": [
+        271.7000030517578,
+        146
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "destination",
+          "type": "IMAGE",
+          "link": 51
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "link": 50
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "name": "x",
+          "type": "INT",
+          "widget": {
+            "name": "x"
+          },
+          "link": 60
+        },
+        {
+          "name": "y",
+          "type": "INT",
+          "widget": {
+            "name": "y"
+          },
+          "link": 61
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            52
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageCompositeMasked"
+      },
+      "widgets_values": [
+        0,
+        0,
+        false
+      ]
+    },
+    {
+      "id": 39,
+      "type": "PreviewImage",
+      "pos": [
+        640,
+        -390
+      ],
+      "size": [
+        530,
+        390
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      26,
+      26,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      26,
+      2,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      46,
+      18,
+      0,
+      33,
+      0,
+      "IMAGE"
+    ],
+    [
+      47,
+      33,
+      0,
+      35,
+      0,
+      "IMAGE"
+    ],
+    [
+      48,
+      19,
+      0,
+      36,
+      0,
+      "IMAGE"
+    ],
+    [
+      49,
+      36,
+      0,
+      37,
+      0,
+      "IMAGE"
+    ],
+    [
+      50,
+      35,
+      0,
+      38,
+      1,
+      "IMAGE"
+    ],
+    [
+      51,
+      37,
+      0,
+      38,
+      0,
+      "IMAGE"
+    ],
+    [
+      52,
+      38,
+      0,
+      39,
+      0,
+      "IMAGE"
+    ],
+    [
+      53,
+      26,
+      7,
+      41,
+      0,
+      "INT"
+    ],
+    [
+      56,
+      26,
+      8,
+      43,
+      0,
+      "INT"
+    ],
+    [
+      57,
+      44,
+      0,
+      41,
+      1,
+      "FLOAT"
+    ],
+    [
+      58,
+      44,
+      0,
+      43,
+      1,
+      "FLOAT"
+    ],
+    [
+      59,
+      44,
+      0,
+      36,
+      1,
+      "FLOAT"
+    ],
+    [
+      60,
+      41,
+      1,
+      38,
+      3,
+      "INT"
+    ],
+    [
+      61,
+      43,
+      1,
+      38,
+      4,
+      "INT"
+    ],
+    [
+      63,
+      44,
+      0,
+      33,
+      1,
+      "FLOAT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Upscale Workflows Here",
+      "bounding": [
+        -300,
+        -520,
+        290,
+        350
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Calc New Offsets",
+      "bounding": [
+        -300,
+        -140,
+        290,
+        400
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.4305676431342477,
+      "offset": [
+        2221.610951210951,
+        745.9162105002458
+      ]
+    },
+    "frontendVersion": "1.45.20",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
