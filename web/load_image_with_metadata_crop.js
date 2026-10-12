@@ -17,21 +17,19 @@ function hideWidget(node, name) {
     w.computeSize = () => [0, -4];
 }
 
-function setComboValues(widget, values) {
-    widget.options = widget.options || {};
-    widget.options.values = values;
-}
-
 function selectedFilename(node) {
     const w = findWidget(node, "image");
     return w ? w.value : null;
 }
 
 function viewUrl(filename) {
+    const idx = filename.lastIndexOf("/");
+    const subfolder = idx >= 0 ? filename.slice(0, idx) : "";
+    const basename = idx >= 0 ? filename.slice(idx + 1) : filename;
     const p = new URLSearchParams();
-    p.set("filename", filename);
+    p.set("filename", basename);
     p.set("type", "input");
-    p.set("subfolder", "");
+    p.set("subfolder", subfolder);
     return api.apiURL("/view?" + p.toString());
 }
 
@@ -43,50 +41,6 @@ function stop(e) {
     e.preventDefault();
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-}
-
-function attachFolderRefresh(node) {
-    const folderTypeWidget = findWidget(node, "folder_type");
-    const imageWidget = findWidget(node, "image");
-    if (!folderTypeWidget || !imageWidget) return;
-
-    const setImageUploadEnabled = (enabled) => {
-        imageWidget.options = imageWidget.options || {};
-        if (enabled) {
-            imageWidget.options.image_upload = true;
-        } else {
-            delete imageWidget.options.image_upload;
-        }
-    };
-
-    const refreshFiles = async () => {
-        const previous = imageWidget.value;
-        const folderType = folderTypeWidget.value || "input";
-        const params = new URLSearchParams({ folder_type: folderType });
-        setImageUploadEnabled(folderType === "input");
-        try {
-            const response = await api.fetchApi(`/dockercpu/load_image_with_metadata/files?${params.toString()}`);
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-            const payload = await response.json();
-            const files = Array.isArray(payload.files) ? payload.files : [];
-            setComboValues(imageWidget, files);
-            imageWidget.value = files.includes(previous) ? previous : (files[0] || "");
-        } catch (error) {
-            console.error("LoadImageWithMetadataCrop file refresh failed", error);
-        }
-        node.setDirtyCanvas(true, true);
-    };
-
-    setImageUploadEnabled((folderTypeWidget.value || "input") === "input");
-
-    const callback = folderTypeWidget.callback;
-    folderTypeWidget.callback = function () {
-        const value = callback?.apply(this, arguments);
-        refreshFiles();
-        return value;
-    };
 }
 
 function attachCropEditor(node) {
@@ -530,7 +484,6 @@ app.registerExtension({
             const result = onNodeCreated?.apply(this, arguments);
             this.size = [900, 720];
             this.serialize_widgets = true;
-            attachFolderRefresh(this);
             attachCropEditor(this);
             return result;
         };

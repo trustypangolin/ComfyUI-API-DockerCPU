@@ -36,16 +36,6 @@ try:
 except ImportError:
     FOLDER_PATHS_AVAILABLE = False
 
-try:
-    from server import PromptServer
-    from aiohttp import web
-    ROUTES_AVAILABLE = True
-except ImportError:
-    PromptServer = None
-    web = None
-    ROUTES_AVAILABLE = False
-
-
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff", ".tif"}
 
 
@@ -179,11 +169,8 @@ def _process_webp_exif(exif_data, metadata):
     return metadata.get('prompt', {}), metadata
 
 
-def _resolve_image_path(image, folder_type="input"):
+def _resolve_image_path(image):
     if folder_paths:
-        if folder_type == "output":
-            base_dir = folder_paths.get_output_directory()
-            return os.path.join(base_dir, image)
         return folder_paths.get_annotated_filepath(image)
     return image
 
@@ -270,7 +257,6 @@ class LoadImageWithMetadata:
             return {
                 "required": {
                     "image": ("STRING", {"default": "", "tooltip": "Path to image file"}),
-                    "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from"}),
                 },
             }
 
@@ -278,7 +264,6 @@ class LoadImageWithMetadata:
 
         return {
             "required": {
-                "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from. The image dropdown is refreshed automatically."}),
                 "image": (input_files, {"image_upload": True}),
             },
         }
@@ -289,8 +274,8 @@ class LoadImageWithMetadata:
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image from the input folder and extracts embedded prompt, workflow, and metadata."
 
-    def execute(self, image, folder_type="input"):
-        image_path = _resolve_image_path(image, folder_type)
+    def execute(self, image):
+        image_path = _resolve_image_path(image)
         base_filename = Path(image_path).name
         base_dir = os.path.dirname(image_path)
 
@@ -302,16 +287,16 @@ class LoadImageWithMetadata:
         return tensor, mask_tensor, prompt, metadata, base_filename, base_dir, height, width, megapixels
 
     @classmethod
-    def IS_CHANGED(cls, image, folder_type="input"):
-        image_path = _resolve_image_path(image, folder_type)
+    def IS_CHANGED(cls, image):
+        image_path = _resolve_image_path(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
             m.update(f.read())
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(cls, image, folder_type="input"):
-        image_path = _resolve_image_path(image, folder_type)
+    def VALIDATE_INPUTS(cls, image):
+        image_path = _resolve_image_path(image)
         if not os.path.isfile(image_path):
             return "Invalid image file: {}".format(image)
         return True
@@ -352,7 +337,6 @@ class LoadImageWithMetadataCrop:
             return {
                 "required": {
                     "image": ("STRING", {"default": "", "tooltip": "Path to image file"}),
-                    "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from"}),
                 },
                 "optional": {
                     "crop_x": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Left edge of crop. -1 disables cropping."}),
@@ -366,7 +350,6 @@ class LoadImageWithMetadataCrop:
 
         return {
             "required": {
-                "folder_type": (["input", "output"], {"default": "input", "tooltip": "Which ComfyUI folder to load from. The image dropdown is refreshed automatically."}),
                 "image": (input_files, {"image_upload": True}),
             },
             "optional": {
@@ -395,8 +378,8 @@ class LoadImageWithMetadataCrop:
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image with metadata and optionally crops a region, returning both the cropped and original images plus a zoom factor."
 
-    def execute(self, image, folder_type="input", crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
-        image_path = _resolve_image_path(image, folder_type)
+    def execute(self, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
+        image_path = _resolve_image_path(image)
         base_filename = Path(image_path).name
         base_dir = os.path.dirname(image_path)
 
@@ -426,8 +409,8 @@ class LoadImageWithMetadataCrop:
         )
 
     @classmethod
-    def IS_CHANGED(cls, image, folder_type="input", crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
-        image_path = _resolve_image_path(image, folder_type)
+    def IS_CHANGED(cls, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
+        image_path = _resolve_image_path(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
             m.update(f.read())
@@ -435,8 +418,8 @@ class LoadImageWithMetadataCrop:
         return m.digest().hex()
 
     @classmethod
-    def VALIDATE_INPUTS(cls, image, folder_type="input", crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
-        image_path = _resolve_image_path(image, folder_type)
+    def VALIDATE_INPUTS(cls, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
+        image_path = _resolve_image_path(image)
         if not os.path.isfile(image_path):
             return "Invalid image file: {}".format(image)
         return True
@@ -451,20 +434,3 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithMetadata": "Load Image With Metadata",
     "LoadImageWithMetadataCrop": "Load Image with Metadata Crop",
 }
-
-
-if ROUTES_AVAILABLE:
-    @PromptServer.instance.routes.get("/dockercpu/load_image_with_metadata/files")
-    async def get_load_image_with_metadata_files(request):
-        folder_type = request.query.get("folder_type", "input")
-        if not FOLDER_PATHS_AVAILABLE:
-            return web.json_response({"error": "folder_paths unavailable", "files": []}, status=400)
-        if folder_type == "output":
-            base_dir = folder_paths.get_output_directory()
-        else:
-            base_dir = folder_paths.get_input_directory()
-        try:
-            files = _scan_folder_files(base_dir)
-            return web.json_response({"files": files, "folder_type": folder_type})
-        except Exception as e:
-            return web.json_response({"error": str(e), "files": []}, status=500)

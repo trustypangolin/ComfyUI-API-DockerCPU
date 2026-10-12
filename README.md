@@ -176,6 +176,12 @@ Available in category: `🎨 DockerCPU API/Utilities`
 - **Save Text With Filename** - Save text content to a file named after the source image
   - Inputs: `text`, `base_dir`, `base_filename`, `replace_extension` (BOOLEAN), `extension` (STRING)
 
+### Touch/Pencil Usability
+
+On touch devices (e.g. iPad, detected via `navigator.maxTouchPoints`), this extension enlarges LiteGraph's context menu and combo-widget value-list rows (`.litemenu-entry`), which ship at a 12px font with 2px padding - too small to reliably tap with a finger or Apple Pencil. It also turns an Apple Pencil tap on a menu/list entry into a click, because Safari often doesn't send one for pen taps (e.g. with Scribble enabled), so the pencil selects entries the way a finger does. While the pencil is down on the graph canvas, it also hides tiny pencil movements (within LiteGraph's 6px click drift) from the canvas, so a pencil tap counts as a click rather than a drag. This makes widget arrows and combo dropdowns respond to the pencil.
+
+Palm rejection: **Settings → DockerCPU → Pencil → Ignore finger touches** blocks all finger input, so you can rest your hand on the screen while using the pencil. After the first pencil tap, a floating **✏️** toggle appears in the bottom-right corner to switch this on and off. A finger can always tap the toggle, so you can't lock yourself out. Hide the toggle with **Show pencil toggle when a pencil is used**. Apple Pencil double-tap and squeeze aren't supported: Safari doesn't make them available to web pages. Desktop mouse/trackpad usage is unaffected. See [web/touch_usability.js](web/touch_usability.js).
+
 ## Supported Models
 
 ### Replicate Models
