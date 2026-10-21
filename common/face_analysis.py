@@ -299,12 +299,20 @@ class FaceAnalyze:
 # ---------------------------------------------------------------- similarity
 
 _reference_cache = {}
+_reference_cache_lock = threading.Lock()
+
+
+def resolve_reference_folder(folder):
+    """Absolute folder; relative paths are taken from the ComfyUI input dir."""
+    folder = folder.strip()
+    return folder if os.path.isabs(folder) else os.path.join(folder_paths.get_input_directory(), folder)
 
 
 def _load_reference_folder(folder, analysis_args):
     """Embeddings for every reference in folder: .npy files (512 floats) and
-    images (largest face). Label is the subfolder name for files in a
-    subfolder ('refs/Alice/1.jpg' -> 'Alice'), otherwise the file stem."""
+    images (largest face). Label is the first subfolder name for files in a
+    subfolder ('refs/Alice/1.jpg' or 'refs/Alice/1990/1.jpg' -> 'Alice'),
+    otherwise the file stem. Embeddings are cached by path, size and mtime."""
     if not os.path.isdir(folder):
         raise FileNotFoundError(f"Reference folder not found: {folder}")
     refs = []
@@ -316,30 +324,50 @@ def _load_reference_folder(folder, analysis_args):
             if ext != ".npy" and ext not in IMAGE_EXTENSIONS:
                 continue
             rel_root = os.path.relpath(root, folder)
-            label = os.path.splitext(name)[0] if rel_root == "." else rel_root.replace("\\", "/")
+            label = os.path.splitext(name)[0] if rel_root == "." else rel_root.replace("\\", "/").split("/")[0]
             st = os.stat(path)
             key = (path, st.st_size, st.st_mtime_ns, analysis_args)
-            if key not in _reference_cache:
-                _reference_cache[key] = _reference_embedding(path, ext, analysis_args)
-            emb = _reference_cache[key]
+            with _reference_cache_lock:
+                if key not in _reference_cache:
+                    _reference_cache[key] = _reference_embedding(path, ext, analysis_args)
+                emb = _reference_cache[key]
             if emb is not None:
                 refs.append((label, os.path.relpath(path, folder).replace("\\", "/"), emb))
     return refs
 
 
+def _crop_keypoints(info):
+    """5x2 face keypoints from a crop's PNG 'restore' metadata (written by
+    FaceIdentify / FaceCluster), relative to the crop; None if absent."""
+    try:
+        kps = np.asarray(json.loads(info.get("restore", ""))["kps"], dtype=np.float32)
+    except (ValueError, KeyError, TypeError):
+        return None
+    return kps if kps.shape == (5, 2) else None
+
+
 def _reference_embedding(path, ext, analysis_args):
+    """Embedding of a reference file. Face crops carrying keypoints in their
+    'restore' metadata are embedded directly; other images use the largest
+    detected face, retrying at lower detection thresholds for small/faded faces."""
     if ext == ".npy":
         emb = np.load(path, allow_pickle=False).astype(np.float32).reshape(-1)
-    else:
-        with Image.open(path) as im:
-            img = np.asarray(ImageOps.exif_transpose(im).convert("RGB"))
-        faces = _analyze_array(img, *analysis_args, 0)
-        if not faces:
-            print(f"[ComfyUI-API-DockerCPU] FaceSimilarity: no face found in reference {path}, skipped")
-            return None
-        largest = max(faces, key=lambda f: f["bbox"]["width"] * f["bbox"]["height"])
-        emb = largest["embedding"]
-    return emb / max(np.linalg.norm(emb), 1e-12)
+        return emb / max(np.linalg.norm(emb), 1e-12)
+
+    detector, recognizer, provider, det_size, det_thresh, nms_thresh = analysis_args
+    with Image.open(path) as im:
+        kps = _crop_keypoints(im.info)
+        pil = ImageOps.exif_transpose(im).convert("RGB")
+    if kps is not None:
+        return _embed(_session(recognizer, provider), pil, [kps])[0]
+
+    img = np.asarray(pil)
+    for thresh in (det_thresh, 0.3, 0.2):
+        faces = _analyze_array(img, detector, recognizer, provider, det_size, min(thresh, det_thresh), nms_thresh, 0)
+        if faces:
+            return max(faces, key=lambda f: f["bbox"]["width"] * f["bbox"]["height"])["embedding"]
+    print(f"[ComfyUI-API-DockerCPU] no face found in reference {path}, skipped")
+    return None
 
 
 class FaceSimilarity:
@@ -364,7 +392,7 @@ class FaceSimilarity:
             },
             "optional": {
                 "reference_analysis": ("FACE_ANALYSIS",),
-                "reference_folder": ("STRING", {"default": "", "tooltip": "Absolute folder of reference images and/or .npy embeddings. Subfolder names become labels."}),
+                "reference_folder": ("STRING", {"default": "", "tooltip": "Folder of reference images and/or .npy embeddings, relative to the input folder or absolute. First-level subfolder names become labels."}),
                 "provider": (PROVIDER_OPTIONS, {"default": "auto", "tooltip": "Used when embedding reference images."}),
             },
         }
@@ -389,7 +417,7 @@ class FaceSimilarity:
         if reference_folder and reference_folder.strip():
             # Reference images are embedded with the same models as the query.
             analysis_args = (face_analysis["detector"], face_analysis["recognizer"], provider, 640, 0.5, 0.4)
-            refs.extend(_load_reference_folder(reference_folder.strip(), analysis_args))
+            refs.extend(_load_reference_folder(resolve_reference_folder(reference_folder), analysis_args))
         if not refs:
             raise ValueError("No references: connect reference_analysis or set reference_folder")
 

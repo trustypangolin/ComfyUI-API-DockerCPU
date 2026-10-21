@@ -200,6 +200,11 @@ Available in category: `🎨 DockerCPU API/Face`. All run on CPU; a GPU is used 
   - Outputs: `image`, `bboxes` (in drawn order), `labels_json`
 - **Face Similarity (ArcFace)** - Cosine similarity of one face against a `reference_analysis` and/or a `reference_folder` of images and `.npy` embeddings (subfolder names become labels)
   - Outputs: `best_score`, `best_match`, `ranking` (JSON)
+- **Face Identify (ArcFace)** - Every face in one image vs a reference folder (`<folder>/<Label>/*.png|jpg|npy`, relative to the input folder or absolute). Per-label scores combine by `max` or `mean_top3`; a label is assigned when the best score reaches `threshold` and beats the best other label by `margin`, else `unknown_label`
+  - List outputs, one per face: `face_crop` (square, `crop_pad` × bbox, native resolution), `label`, `score`, `runner_up`, `runner_up_score`, `suffix` (`_p01`…), `subfolder`, `crop_box_json`, `restore_json` (wire into Save Image With Filename `extra_metadata`); plus `summary_json`
+- **Face Cluster (ArcFace)** - Batch node: groups all faces from a folder (average-linkage, cosine distance ≤ `distance_threshold`) into `cluster_01` (largest) … and `singles`, to bootstrap reference folders
+- **Collect Labelled Faces** - Reads a review done by moving crops between `<review_root>/<Label>/<folder>/` folders into a CSV (`changed` = moved from the original label). Optionally copies confirmed crops into `<references_root>/<Label>/` under the input folder (needs `allow_input_dir`; never `originals/`; honours `exclude_list` and `skip_labels`)
+- Face crops saved with `restore_json` carry their face keypoints, so they work as references without re-detection
 - **Load Face Detection Model (MediaPipe, device)** - Native MediaPipe face landmarker loaded on `cpu` or the `default` device; works with the native MediaPipe detect / mask nodes
 
 Install `onnxruntime` (CPU) or `onnxruntime-gpu` for the InsightFace nodes; `cpu-requirements.txt` includes the CPU build.
