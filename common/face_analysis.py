@@ -187,13 +187,29 @@ def _align(img_pil, kps, size=112):
 def _embed(session, img_pil, kps_list):
     if len(kps_list) == 0:
         return np.zeros((0, 512), np.float32)
-    crops = np.stack([np.asarray(_align(img_pil, k), dtype=np.float32) for k in kps_list])
-    blob = ((crops - 127.5) / 127.5).transpose(0, 3, 1, 2)
-    feats = session.run(None, {session.get_inputs()[0].name: blob})[0]
+    # One face per run: w600k_r50 declares a fixed {1, 512} output, so batching
+    # works but makes onnxruntime log a shape warning for every call.
+    input_name = session.get_inputs()[0].name
+    feats = []
+    for k in kps_list:
+        crop = np.asarray(_align(img_pil, k), dtype=np.float32)
+        blob = ((crop - 127.5) / 127.5).transpose(2, 0, 1)[None]
+        feats.append(session.run(None, {input_name: blob})[0][0])
+    feats = np.stack(feats)
     return feats / np.linalg.norm(feats, axis=1, keepdims=True).clip(min=1e-12)
 
 
-def _analyze_array(img, detector, recognizer, provider, det_size, det_thresh, nms_thresh, max_faces):
+SORT_OPTIONS = ["left_to_right", "score"]
+
+
+def sort_left_to_right(bboxes):
+    """Order {x, y, width, height} dicts by centre-x, then centre-y."""
+    return sorted(bboxes, key=lambda b: (b["x"] + b["width"] / 2, b["y"] + b["height"] / 2))
+
+
+def _analyze_array(img, detector, recognizer, provider, det_size, det_thresh, nms_thresh, max_faces, sort="score"):
+    """Faces in one RGB uint8 image. max_faces keeps the highest-scoring faces;
+    sort then orders them ('score' = detection score, 'left_to_right')."""
     boxes, scores, kpss = _detect(_session(detector, provider), img, det_size, det_thresh, nms_thresh)
     if max_faces > 0:
         boxes, scores, kpss = boxes[:max_faces], scores[:max_faces], kpss[:max_faces]
@@ -209,6 +225,9 @@ def _analyze_array(img, detector, recognizer, provider, det_size, det_thresh, nm
             "kps": kps.astype(np.float32),
             "embedding": e.astype(np.float32),
         })
+    if sort == "left_to_right":
+        order = sort_left_to_right([dict(f["bbox"], i=i) for i, f in enumerate(faces)])
+        faces = [faces[b["i"]] for b in order]
     return faces
 
 
@@ -220,12 +239,16 @@ class FaceAnalyze:
     """
     Detect faces (SCRFD) and compute 512-d ArcFace embeddings.
 
+    sort orders faces in every output the same way, so face k is the same face
+    in bboxes, scores, faces_json and face_analysis: left_to_right (bbox
+    centre-x, then centre-y) or score (highest first).
+
     Outputs:
-        bboxes:        Native BOUNDING_BOX list per frame ({x, y, width, height, label, score}),
-                       sorted by detection score
+        bboxes:        Native BOUNDING_BOX list per frame ({x, y, width, height, label, score})
         face_analysis: FACE_ANALYSIS (per frame: list of faces with bbox, score, kps, embedding)
         face_count:    Faces found in the first frame (INT)
         scores:        JSON list per frame of detection scores (STRING)
+        faces_json:    JSON list of {frame, index (1-based per frame), x, y, width, height, score} (STRING)
     """
 
     @classmethod
@@ -242,26 +265,35 @@ class FaceAnalyze:
                 "max_faces": ("INT", {"default": 0, "min": 0, "max": 256, "tooltip": "Keep the N highest-scoring faces per frame. 0 = all."}),
                 "provider": (PROVIDER_OPTIONS, {"default": "auto", "tooltip": "auto uses CUDA/ROCm/DirectML when available, else CPU."}),
             },
+            "optional": {
+                "sort": (SORT_OPTIONS, {"default": "left_to_right", "tooltip": "Face order in every output: left_to_right (centre-x) or detection score."}),
+            },
         }
 
-    RETURN_TYPES = ("BOUNDING_BOX", "FACE_ANALYSIS", "INT", "STRING")
-    RETURN_NAMES = ("bboxes", "face_analysis", "face_count", "scores")
+    RETURN_TYPES = ("BOUNDING_BOX", "FACE_ANALYSIS", "INT", "STRING", "STRING")
+    RETURN_NAMES = ("bboxes", "face_analysis", "face_count", "scores", "faces_json")
     FUNCTION = "analyze"
     CATEGORY = "🎨 DockerCPU API/Face"
     DESCRIPTION = "Detects faces with InsightFace SCRFD and computes ArcFace embeddings via onnxruntime (CPU or GPU)."
 
-    def analyze(self, image, detector, recognizer, det_threshold=0.5, nms_threshold=0.4, det_size=640, max_faces=0, provider="auto"):
+    def analyze(self, image, detector, recognizer, det_threshold=0.5, nms_threshold=0.4, det_size=640, max_faces=0, provider="auto",
+                sort="left_to_right"):
         if det_size % 32:
             raise ValueError(f"det_size must be a multiple of 32, got {det_size}")
         frames = [
             _analyze_array(_image_to_uint8(frame), detector, recognizer, provider,
-                           det_size, det_threshold, nms_threshold, max_faces)
+                           det_size, det_threshold, nms_threshold, max_faces, sort)
             for frame in image
         ]
         bboxes = [[f["bbox"] for f in faces] for faces in frames]
         scores = json.dumps([[round(f["score"], 4) for f in faces] for faces in frames])
+        faces_json = json.dumps([
+            {"frame": fi, "index": i + 1, **{k: round(f["bbox"][k], 1) for k in ("x", "y", "width", "height")},
+             "score": round(f["score"], 4)}
+            for fi, faces in enumerate(frames) for i, f in enumerate(faces)
+        ])
         face_count = len(frames[0]) if frames else 0
-        return (bboxes, {"frames": frames, "detector": detector, "recognizer": recognizer}, face_count, scores)
+        return (bboxes, {"frames": frames, "detector": detector, "recognizer": recognizer}, face_count, scores, faces_json)
 
 
 # ---------------------------------------------------------------- similarity
@@ -328,7 +360,7 @@ class FaceSimilarity:
         return {
             "required": {
                 "face_analysis": ("FACE_ANALYSIS",),
-                "face_index": ("INT", {"default": 0, "min": 0, "max": 4096, "tooltip": "Which face, counting across frames in detection-score order."}),
+                "face_index": ("INT", {"default": 0, "min": 0, "max": 4096, "tooltip": "Which face (0-based), counting across frames in FaceAnalyze's sort order. faces_json index 1 = face_index 0."}),
             },
             "optional": {
                 "reference_analysis": ("FACE_ANALYSIS",),

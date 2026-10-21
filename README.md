@@ -193,7 +193,11 @@ Available in category: `🎨 DockerCPU API/Utilities`
 Available in category: `🎨 DockerCPU API/Face`. All run on CPU; a GPU is used when available.
 
 - **Face Analyze (InsightFace ONNX)** - SCRFD detection + 512-d ArcFace embeddings via `onnxruntime` (no `insightface` package). Models from `models/insightface` (e.g. `buffalo_l/det_10g.onnx`, `buffalo_l/w600k_r50.onnx`); add an `insightface:` key to `extra_model_paths.yaml` if your models live elsewhere
-  - Outputs: `bboxes` (native `BOUNDING_BOX`), `face_analysis`, `face_count`, `scores`
+  - `sort`: `left_to_right` (default, box centre-x) or `score`; applied to every output, so face *k* is the same face everywhere
+  - Outputs: `bboxes` (native `BOUNDING_BOX`), `face_analysis`, `face_count`, `scores`, `faces_json` (`{frame, index, x, y, width, height, score}`, index 1-based)
+- **Draw Numbered BBoxes** - Draws boxes with legible number labels (PIL only); accepts the same `BOUNDING_BOX` shapes as native Draw BBoxes
+  - Inputs: `image`, `bboxes`, `sort` (`as_given` / `left_to_right`), `start_index`, `line_width` (0 = auto), `font_scale` (label height as a fraction of the short edge, 0 = auto), `color`, `show_score`
+  - Outputs: `image`, `bboxes` (in drawn order), `labels_json`
 - **Face Similarity (ArcFace)** - Cosine similarity of one face against a `reference_analysis` and/or a `reference_folder` of images and `.npy` embeddings (subfolder names become labels)
   - Outputs: `best_score`, `best_match`, `ranking` (JSON)
 - **Load Face Detection Model (MediaPipe, device)** - Native MediaPipe face landmarker loaded on `cpu` or the `default` device; works with the native MediaPipe detect / mask nodes
