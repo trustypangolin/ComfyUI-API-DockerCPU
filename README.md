@@ -166,9 +166,7 @@ python tests/test_schemas.py
 | `LOCAL_LLM_ENDPOINT` | Endpoint for the Local LLM node when its `endpoint_url` widget is empty (default `http://localhost:1234`) | No |
 | `DEBUG_API_TRUSTYPANGOLIN` | Enable debug output | No |
 
-| `LOCAL_LLM_ENV_FILE` | Path to a `.env` file read when the two variables above aren't set in the environment | No |
-
-Prefer the environment variables over typing a key into the Local LLM widget: widget values are saved in the workflow JSON and embedded in every output image's metadata. If a variable isn't set in the environment, the node reads it from `.env` files, nearest first: `LOCAL_LLM_ENV_FILE` if set, then each `.env` walking up from this repo's folder (up to 4 levels, e.g. `G:\Ai\.env`), then `.env` in the working directory. Only the Local LLM keys are read from those files.
+Prefer the environment variables over typing a key into the Local LLM widget: widget values are saved in the workflow JSON and embedded in every output image's metadata. If a Local LLM variable isn't set in the environment, the node reads it from `.env` at this repo's root (gitignored). Only the Local LLM keys are read from that file.
 
 ### Utility Nodes
 

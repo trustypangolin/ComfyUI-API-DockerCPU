@@ -25,51 +25,32 @@ ENDPOINT_ENV_VARS = ("LOCAL_LLM_ENDPOINT",)
 API_KEY_ENV_VARS = ("LOCAL_LLM_API_KEY", "LocalLLM")
 
 
-ENV_FILE_VAR = "LOCAL_LLM_ENV_FILE"
-_ENV_FILE_SEARCH_DEPTH = 4
-
-
-def _env_file_candidates():
-    """Explicit LOCAL_LLM_ENV_FILE, then the first .env walking up from this
-    repo (finds G:\\Ai\\.env for G:\\Ai\\custom_nodes\\stable\\<repo>), then the cwd."""
-    explicit = os.environ.get(ENV_FILE_VAR, "").strip()
-    if explicit:
-        yield explicit
-    directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for _ in range(_ENV_FILE_SEARCH_DEPTH):
-        yield os.path.join(directory, ".env")
-        parent = os.path.dirname(directory)
-        if parent == directory:
-            break
-        directory = parent
-    yield os.path.join(os.getcwd(), ".env")
+# Repo-root .env (gitignored), read only for variables missing from the environment.
+ENV_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 
 
 def _read_env_file(names):
-    """Values for `names` from .env files, the first file defining a key wins.
-    Only the requested keys are kept; nothing from the files is logged."""
+    """Values for `names` from the repo .env. Only the requested keys are kept;
+    nothing from the file is logged."""
     wanted = {n.upper(): n for n in names}
     found = {}
-    for path in _env_file_candidates():
-        if not os.path.isfile(path):
-            continue
-        try:
-            with open(path, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    if key.lower().startswith("export "):
-                        key = key[7:].strip()
-                    value = value.strip().strip("'\"")
-                    if key.upper() in wanted and value:
-                        found.setdefault(wanted[key.upper()], value)
-        except OSError:
-            continue
-        if len(found) == len(wanted):
-            break
+    if not os.path.isfile(ENV_FILE):
+        return found
+    try:
+        with open(ENV_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                if key.lower().startswith("export "):
+                    key = key[7:].strip()
+                value = value.strip().strip("'\"")
+                if key.upper() in wanted and value:
+                    found.setdefault(wanted[key.upper()], value)
+    except OSError:
+        pass
     return found
 
 
