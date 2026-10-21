@@ -12,6 +12,7 @@ Adapted from ComfyUI-Crystools (CImageLoadWithMetadata).
 
 import fnmatch
 import os
+import re
 import json
 import hashlib
 from datetime import datetime
@@ -38,23 +39,30 @@ except ImportError:
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff", ".tif"}
 
+EXCLUDE_FILES = {
+    "Thumbs.db",
+    "*.DS_Store",
+    "desktop.ini",
+    "*.lock",
+    "*.txt",
+    "*.kra",
+}
+EXCLUDE_FOLDERS = {"clipspace", ".*"}
+
+# Combo value that selects the input directory itself in the batch loader.
+INPUT_ROOT_FOLDER = "."
+
+
+def _is_excluded_folder(name):
+    return any(fnmatch.fnmatch(name, ex) for ex in EXCLUDE_FOLDERS)
+
 
 def _scan_folder_files(base_dir):
-    exclude_files = {
-        "Thumbs.db",
-        "*.DS_Store",
-        "desktop.ini",
-        "*.lock",
-        "*.txt",
-        "*.kra",
-    }
-    exclude_folders = {"clipspace", ".*"}
-
     file_list = []
     for root, dirs, files in os.walk(base_dir, followlinks=True):
-        dirs[:] = [d for d in dirs if not any(fnmatch.fnmatch(d, ex) for ex in exclude_folders)]
+        dirs[:] = [d for d in dirs if not _is_excluded_folder(d)]
         for file in files:
-            if any(fnmatch.fnmatch(file, ex) for ex in exclude_files):
+            if any(fnmatch.fnmatch(file, ex) for ex in EXCLUDE_FILES):
                 continue
             ext = os.path.splitext(file)[1].lower()
             if ext not in IMAGE_EXTENSIONS:
@@ -62,6 +70,61 @@ def _scan_folder_files(base_dir):
             relpath = os.path.relpath(os.path.join(root, file), start=base_dir)
             file_list.append(relpath.replace("\\", "/"))
     return sorted(file_list)
+
+
+def _scan_subfolders(base_dir):
+    """Relative (forward-slash) paths of every subfolder of base_dir, using the
+    same folder exclusions as _scan_folder_files. The base itself is '.'."""
+    folders = [INPUT_ROOT_FOLDER]
+    for root, dirs, _files in os.walk(base_dir, followlinks=True):
+        dirs[:] = [d for d in dirs if not _is_excluded_folder(d)]
+        for d in dirs:
+            relpath = os.path.relpath(os.path.join(root, d), start=base_dir)
+            folders.append(relpath.replace("\\", "/"))
+    return [INPUT_ROOT_FOLDER] + sorted(folders[1:], key=_natural_key)
+
+
+def _natural_key(text):
+    """Sort key that orders embedded numbers numerically: img2 < img10."""
+    return [(0, int(part), "") if part.isdigit() else (1, 0, part.casefold())
+            for part in re.split(r"(\d+)", text) if part]
+
+
+def _file_sha256(path):
+    m = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            m.update(chunk)
+    return m.hexdigest()
+
+
+def _input_rel_dir(image_path):
+    """Directory of image_path relative to the input dir, forward slashes.
+
+    '' when the file sits in the input root or lies outside the input dir
+    (e.g. an annotated '[output]' path).
+    """
+    if not FOLDER_PATHS_AVAILABLE:
+        return ""
+    input_dir = folder_paths.get_input_directory()
+    file_dir = os.path.dirname(os.path.abspath(image_path))
+    if not folder_paths.is_within_directory(input_dir, file_dir):
+        return ""
+    rel = os.path.relpath(os.path.realpath(file_dir), os.path.realpath(input_dir)).replace("\\", "/")
+    return "" if rel == "." else rel
+
+
+def _strip_dir_prefix(rel_dir, prefix):
+    """Remove a leading folder prefix ('originals/') from rel_dir, on whole
+    path segments only. rel_dir is returned unchanged when it doesn't match."""
+    prefix = prefix.replace("\\", "/").strip("/")
+    if not prefix:
+        return rel_dir
+    if rel_dir == prefix:
+        return ""
+    if rel_dir.startswith(prefix + "/"):
+        return rel_dir[len(prefix) + 1:]
+    return rel_dir
 
 
 def _get_size(path):
@@ -170,7 +233,7 @@ def _process_webp_exif(exif_data, metadata):
 
 
 def _resolve_image_path(image):
-    if folder_paths:
+    if FOLDER_PATHS_AVAILABLE:
         return folder_paths.get_annotated_filepath(image)
     return image
 
@@ -249,6 +312,11 @@ class LoadImageWithMetadata:
         metadata:        Dict with file info, resolution, date, size, workflow, EXIF
         base_filename:   String filename without directory path
         base_dir:        String directory containing the image file
+        height, width:   Image size after EXIF transpose (INT)
+        megapixels:      Image megapixels (FLOAT)
+        REL_DIR:         Directory relative to the input folder, forward slashes
+        STEM:            Filename without extension
+        SHA256:          Hex digest of the file bytes
     """
 
     @classmethod
@@ -268,8 +336,11 @@ class LoadImageWithMetadata:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK", "JSON", "METADATA_RAW", "STRING", "STRING", "INT", "INT", "FLOAT")
-    RETURN_NAMES = ("image", "mask", "prompt", "Metadata RAW", "BASE_FILENAME", "BASE_DIR", "height", "width", "megapixels")
+    # New outputs are appended only, so saved workflows keep their slot indices.
+    RETURN_TYPES = ("IMAGE", "MASK", "JSON", "METADATA_RAW", "STRING", "STRING", "INT", "INT", "FLOAT",
+                    "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("image", "mask", "prompt", "Metadata RAW", "BASE_FILENAME", "BASE_DIR", "height", "width", "megapixels",
+                    "REL_DIR", "STEM", "SHA256")
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image from the input folder and extracts embedded prompt, workflow, and metadata."
@@ -284,7 +355,8 @@ class LoadImageWithMetadata:
         )
 
         megapixels = round((width * height) / 1_000_000.0, 4)
-        return tensor, mask_tensor, prompt, metadata, base_filename, base_dir, height, width, megapixels
+        return (tensor, mask_tensor, prompt, metadata, base_filename, base_dir, height, width, megapixels,
+                _input_rel_dir(image_path), Path(image_path).stem, _file_sha256(image_path))
 
     @classmethod
     def IS_CHANGED(cls, image):
@@ -329,6 +401,9 @@ class LoadImageWithMetadataCrop:
         original_width:    Width of the source image before cropping (INT)
         zoom_factor:       Ratio of full-image diagonal to crop diagonal (FLOAT)
         megapixels:        Cropped image megapixels (FLOAT)
+        REL_DIR:           Directory relative to the input folder, forward slashes
+        STEM:              Filename without extension
+        SHA256:            Hex digest of the file bytes
     """
 
     @classmethod
@@ -366,6 +441,7 @@ class LoadImageWithMetadataCrop:
         "INT", "INT", "INT", "INT",
         "INT", "INT", "INT", "INT",
         "FLOAT", "FLOAT",
+        "STRING", "STRING", "STRING",
     )
     RETURN_NAMES = (
         "cropped_image", "mask", "original_image",
@@ -373,6 +449,7 @@ class LoadImageWithMetadataCrop:
         "crop_x", "crop_y", "crop_width", "crop_height",
         "height", "width", "original_height", "original_width",
         "zoom_factor", "megapixels",
+        "REL_DIR", "STEM", "SHA256",
     )
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
@@ -406,6 +483,7 @@ class LoadImageWithMetadataCrop:
             x, y, w, h,
             h, w, orig_h, orig_w,
             zoom_factor, megapixels,
+            _input_rel_dir(image_path), Path(image_path).stem, _file_sha256(image_path),
         )
 
     @classmethod
@@ -425,12 +503,135 @@ class LoadImageWithMetadataCrop:
         return True
 
 
+def _resolve_input_folder(folder):
+    """Absolute path of an input subfolder, rejecting anything that escapes the
+    input dir (same containment check as native secure_subfolder_path)."""
+    input_dir = folder_paths.get_input_directory()
+    folder = (folder or INPUT_ROOT_FOLDER).replace("\\", "/")
+    target = os.path.abspath(os.path.join(input_dir, folder))
+    if not folder_paths.is_within_directory(input_dir, target):
+        raise ValueError(f"Invalid folder {folder!r}: resolves outside of the input directory")
+    return target
+
+
+def _list_folder_images(folder, pattern, recursive):
+    """Image paths (relative to the input dir, forward slashes) in natural order.
+
+    Uses _scan_folder_files so exclusions match the single-image loader.
+    The glob pattern is matched case-insensitively against the filename.
+    """
+    target = _resolve_input_folder(folder)
+    if not os.path.isdir(target):
+        raise FileNotFoundError(f"Input folder not found: {folder}")
+    pattern = (pattern or "*").lower()
+    folder_prefix = os.path.relpath(target, folder_paths.get_input_directory()).replace("\\", "/")
+
+    files = []
+    for rel in _scan_folder_files(target):
+        if not recursive and "/" in rel:
+            continue
+        if not fnmatch.fnmatchcase(rel.rsplit("/", 1)[-1].lower(), pattern):
+            continue
+        files.append(rel if folder_prefix == "." else f"{folder_prefix}/{rel}")
+    return sorted(files, key=_natural_key)
+
+
+class LoadImagesFromFolderWithMetadata:
+    """
+    Batch variant of LoadImageWithMetadata: loads every image in an input
+    subfolder, in natural filename order, as lists (one entry per file).
+
+    Images keep their native size, so outputs are lists rather than a batch
+    tensor. Loading and EXIF transpose are shared with the single-image node.
+
+    Outputs (all lists):
+        image, mask:     Per-file IMAGE (1xHxWxC) and MASK tensors
+        BASE_FILENAME:   Filename with extension
+        STEM:            Filename without extension
+        REL_DIR:         File's directory relative to the input folder
+        MIRROR_DIR:      REL_DIR with strip_prefix removed ('originals/1990' -> '1990')
+        SHA256:          Hex digest of the file bytes
+        width, height:   Image size after EXIF transpose
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        folders = _scan_subfolders(folder_paths.get_input_directory()) if FOLDER_PATHS_AVAILABLE else [INPUT_ROOT_FOLDER]
+        return {
+            "required": {
+                "folder": (folders, {"tooltip": "Input subfolder to load. '.' is the input folder itself."}),
+                "pattern": ("STRING", {"default": "*", "tooltip": "Filename glob, case-insensitive, e.g. *.jpg or img00*"}),
+                "recursive": ("BOOLEAN", {"default": False, "tooltip": "Also load images from subfolders."}),
+                "strip_prefix": ("STRING", {"default": "originals/", "tooltip": "Leading folder removed from REL_DIR to make MIRROR_DIR."}),
+                "start_index": ("INT", {"default": 0, "min": 0, "max": 0xffffffff, "step": 1, "tooltip": "Skip this many files (after sorting)."}),
+                "limit": ("INT", {"default": 0, "min": 0, "max": 0xffffffff, "step": 1, "tooltip": "Maximum files to load. 0 = all."}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "BASE_FILENAME", "STEM", "REL_DIR", "MIRROR_DIR", "SHA256", "width", "height")
+    OUTPUT_IS_LIST = (True,) * 9
+    FUNCTION = "execute"
+    CATEGORY = "🎨 DockerCPU API/Utilities"
+    DESCRIPTION = "Loads all images in an input subfolder (natural order) as lists, with filename, folder and hash outputs for mirrored saving."
+
+    @staticmethod
+    def _select(folder, pattern, recursive, start_index, limit):
+        files = _list_folder_images(folder, pattern, recursive)
+        end = start_index + limit if limit > 0 else None
+        return files[start_index:end]
+
+    def execute(self, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0):
+        files = self._select(folder, pattern, recursive, start_index, limit)
+        if not files:
+            raise ValueError(f"No images matched pattern {pattern!r} in input folder {folder!r} "
+                             f"(recursive={recursive}, start_index={start_index}, limit={limit})")
+
+        input_dir = folder_paths.get_input_directory()
+        out = tuple([] for _ in self.RETURN_TYPES)
+        for rel in files:
+            image_path = os.path.join(input_dir, rel)
+            _, _, _, tensor, mask_tensor, width, height = _load_image_with_metadata(image_path)
+            rel_dir = rel.rsplit("/", 1)[0] if "/" in rel else ""
+            values = (tensor, mask_tensor, Path(rel).name, Path(rel).stem, rel_dir,
+                      _strip_dir_prefix(rel_dir, strip_prefix), _file_sha256(image_path), width, height)
+            for lst, value in zip(out, values):
+                lst.append(value)
+        return out
+
+    @classmethod
+    def IS_CHANGED(cls, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0):
+        # Cheap change detection: the selected file list plus each file's size and mtime.
+        try:
+            files = cls._select(folder, pattern, recursive, start_index, limit)
+        except Exception as e:
+            return str(e)
+        input_dir = folder_paths.get_input_directory()
+        m = hashlib.sha256(f"{strip_prefix}|".encode())
+        for rel in files:
+            st = os.stat(os.path.join(input_dir, rel))
+            m.update(f"{rel}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+        return m.hexdigest()
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, folder):
+        try:
+            target = _resolve_input_folder(folder)
+        except ValueError as e:
+            return str(e)
+        if not os.path.isdir(target):
+            return f"Input folder not found: {folder}"
+        return True
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageWithMetadata": LoadImageWithMetadata,
     "LoadImageWithMetadataCrop": LoadImageWithMetadataCrop,
+    "LoadImagesFromFolderWithMetadata": LoadImagesFromFolderWithMetadata,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LoadImageWithMetadata": "Load Image With Metadata",
     "LoadImageWithMetadataCrop": "Load Image with Metadata Crop",
+    "LoadImagesFromFolderWithMetadata": "Load Images From Folder With Metadata",
 }

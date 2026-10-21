@@ -162,19 +162,45 @@ python tests/test_schemas.py
 | `REPLICATE_API_TOKEN` | Replicate API token | Yes |
 | `FAL_KEY` | Fal.ai API key | Yes |
 | `HF_TOKEN` | HuggingFace token | No (required for private repos) |
+| `LOCAL_LLM_API_KEY` | API key for the Local LLM node when its `api_key` widget is empty. `LocalLLM` is also accepted | No (LM Studio needs none) |
+| `LOCAL_LLM_ENDPOINT` | Endpoint for the Local LLM node when its `endpoint_url` widget is empty (default `http://localhost:1234`) | No |
 | `DEBUG_API_TRUSTYPANGOLIN` | Enable debug output | No |
+
+| `LOCAL_LLM_ENV_FILE` | Path to a `.env` file read when the two variables above aren't set in the environment | No |
+
+Prefer the environment variables over typing a key into the Local LLM widget: widget values are saved in the workflow JSON and embedded in every output image's metadata. If a variable isn't set in the environment, the node reads it from `.env` files, nearest first: `LOCAL_LLM_ENV_FILE` if set, then each `.env` walking up from this repo's folder (up to 4 levels, e.g. `G:\Ai\.env`), then `.env` in the working directory. Only the Local LLM keys are read from those files.
 
 ### Utility Nodes
 
 Available in category: `🎨 DockerCPU API/Utilities`
 
 - **Load Image With Metadata** - Loads an image from the input folder and extracts embedded prompt, workflow, and EXIF metadata
-  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`
+  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`, `height`, `width`, `megapixels`, `REL_DIR` (folder relative to input, e.g. `originals/1990`), `STEM` (name without extension), `SHA256` (file hash)
+- **Load Images From Folder With Metadata** - Loads every image in an input subfolder in natural order (`img2` before `img10`), as lists at native size
+  - Inputs: `folder`, `pattern` (case-insensitive glob), `recursive`, `strip_prefix` (default `originals/`), `start_index`, `limit` (0 = all)
+  - Outputs (lists): `image`, `mask`, `BASE_FILENAME`, `STEM`, `REL_DIR`, `MIRROR_DIR` (`REL_DIR` minus `strip_prefix`), `SHA256`, `width`, `height`
+- **Save Image With Filename** - Writes `output/<stage>/<mirror_dir>/<stem><suffix>.png` with no counter (`_00`, `_01`, ... for batches > 1)
+  - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image, plus `extra_metadata` JSON as the PNG text key `restore`
+  - Refuses paths outside the output folder and anything under the input folder
 - **Load ZIP Archive** - Load PNG images from a ZIP file URL or path
 - **Load Replicate Prediction** - Load output from a Replicate prediction by ID
 - **Save AMD Video** - Save video with AMD GPU audio fix patch
 - **Save Text With Filename** - Save text content to a file named after the source image
   - Inputs: `text`, `base_dir`, `base_filename`, `replace_extension` (BOOLEAN), `extension` (STRING)
+  - `output_mode`: `base_dir` (write into `base_dir`) or `output_stage` (same `stage` / `mirror_dir` / `stem` / `suffix` path rule as Save Image With Filename)
+  - Refuses to write under the input folder unless `allow_input_dir` is on; `if_exists` defaults to `overwrite`
+
+### Face Nodes
+
+Available in category: `🎨 DockerCPU API/Face`. All run on CPU; a GPU is used when available.
+
+- **Face Analyze (InsightFace ONNX)** - SCRFD detection + 512-d ArcFace embeddings via `onnxruntime` (no `insightface` package). Models from `models/insightface` (e.g. `buffalo_l/det_10g.onnx`, `buffalo_l/w600k_r50.onnx`); add an `insightface:` key to `extra_model_paths.yaml` if your models live elsewhere
+  - Outputs: `bboxes` (native `BOUNDING_BOX`), `face_analysis`, `face_count`, `scores`
+- **Face Similarity (ArcFace)** - Cosine similarity of one face against a `reference_analysis` and/or a `reference_folder` of images and `.npy` embeddings (subfolder names become labels)
+  - Outputs: `best_score`, `best_match`, `ranking` (JSON)
+- **Load Face Detection Model (MediaPipe, device)** - Native MediaPipe face landmarker loaded on `cpu` or the `default` device; works with the native MediaPipe detect / mask nodes
+
+Install `onnxruntime` (CPU) or `onnxruntime-gpu` for the InsightFace nodes; `cpu-requirements.txt` includes the CPU build.
 
 ### Touch/Pencil Usability
 

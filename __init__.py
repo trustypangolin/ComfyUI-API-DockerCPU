@@ -160,6 +160,19 @@ if not _is_test_context():
         LOCAL_LLM_NODE_CLASS_MAPPINGS = {}
         LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+    # Load pipeline I/O and face nodes; each module is optional so one failing
+    # import (e.g. onnxruntime or comfy_extras missing) doesn't hide the others
+    import importlib
+    PIPELINE_NODE_CLASS_MAPPINGS = {}
+    PIPELINE_NODE_DISPLAY_NAME_MAPPINGS = {}
+    for _module_name in ("image_saver", "face_analysis", "mediapipe_device"):
+        try:
+            _module = importlib.import_module(f".common.{_module_name}", __name__)
+            PIPELINE_NODE_CLASS_MAPPINGS.update(_module.NODE_CLASS_MAPPINGS)
+            PIPELINE_NODE_DISPLAY_NAME_MAPPINGS.update(_module.NODE_DISPLAY_NAME_MAPPINGS)
+        except Exception as e:
+            print(f"[ComfyUI-API-DockerCPU] Warning: Could not load {_module_name}: {e}")
+
     # Combine all node mappings
     NODE_CLASS_MAPPINGS = {}
     NODE_CLASS_MAPPINGS.update(_replicate_nodes)
@@ -170,6 +183,7 @@ if not _is_test_context():
     NODE_CLASS_MAPPINGS.update(IMAGE_UTILS_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(TEXT_SAVER_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(LOCAL_LLM_NODE_CLASS_MAPPINGS)
+    NODE_CLASS_MAPPINGS.update(PIPELINE_NODE_CLASS_MAPPINGS)
 
     # Display loaded nodes
     if NODE_CLASS_MAPPINGS:
@@ -182,6 +196,7 @@ if not _is_test_context():
         print(f"  - Image Utils: {len(IMAGE_UTILS_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Text Saver: {len(TEXT_SAVER_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Local LLM: {len(LOCAL_LLM_NODE_CLASS_MAPPINGS)} nodes")
+        print(f"  - Pipeline I/O & Face: {len(PIPELINE_NODE_CLASS_MAPPINGS)} nodes")
     else:
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
     
@@ -197,6 +212,8 @@ if not _is_test_context():
 
     if LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS:
         NODE_DISPLAY_NAME_MAPPINGS.update(LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS)
+
+    NODE_DISPLAY_NAME_MAPPINGS.update(PIPELINE_NODE_DISPLAY_NAME_MAPPINGS)
     
     if _huggingface_nodes:
         from .API.HuggingFace import NODE_DISPLAY_NAME_MAPPINGS as HF_DISPLAY
