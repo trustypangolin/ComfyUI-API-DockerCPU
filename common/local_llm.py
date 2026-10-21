@@ -1,5 +1,7 @@
 import base64
 import os
+import threading
+import time
 from io import BytesIO
 from urllib.parse import urljoin
 
@@ -157,6 +159,42 @@ def fetch_models(endpoint_url, api_type, api_key="", timeout=10):
     if api_type == "lmstudio_native":
         return fetch_lmstudio_models(endpoint_url, api_key, timeout)
     return fetch_openai_models(endpoint_url, api_key, timeout)
+
+
+# Server-side model combo, so saved model names pass object_info validation in
+# clients such as comfy-cli. INPUT_TYPES runs on every /object_info request,
+# so results are cached and the fetch uses a short timeout.
+MODEL_LIST_TIMEOUT = 2
+MODEL_LIST_TTL = 60
+_model_list_cache = {}
+_model_list_lock = threading.Lock()
+
+
+def model_choices():
+    """["auto"] + models from the default endpoint (env / repo .env / localhost),
+    the union of the OpenAI-compatible and LM Studio native lists. Keeps the last
+    good list (or just ["auto"]) when the endpoint is unreachable."""
+    endpoint_url = normalize_endpoint_url("")
+    with _model_list_lock:
+        cached = _model_list_cache.get(endpoint_url)
+        if cached and time.monotonic() - cached[0] < MODEL_LIST_TTL:
+            return cached[1]
+
+        models = []
+        for api_type in ("openai_compatible", "lmstudio_native"):
+            try:
+                models += [m for m in fetch_models(endpoint_url, api_type, "", MODEL_LIST_TIMEOUT) if m not in models]
+            except requests.ConnectionError:
+                break  # endpoint unreachable: don't wait out a second timeout
+            except Exception:
+                continue  # e.g. not an LM Studio server: native API missing
+
+        if models:
+            choices = ["auto"] + [m for m in models if m != "auto"]
+        else:
+            choices = cached[1] if cached else ["auto"]
+        _model_list_cache[endpoint_url] = (time.monotonic(), choices)
+        return choices
 
 
 def image_to_data_uri(image):
@@ -362,7 +400,11 @@ class LocalLLM:
                     "tooltip": "Empty uses the LOCAL_LLM_ENDPOINT environment variable, else http://localhost:1234.",
                 }),
                 "api_type": (["openai_compatible", "lmstudio_native"], {"default": "openai_compatible"}),
-                "model": (["auto"], {"default": "auto"}),
+                "model": (model_choices(), {
+                    "default": "auto",
+                    "tooltip": "'auto' uses the first model the endpoint lists. The list comes from the default endpoint "
+                               "and is refreshed in the UI from endpoint_url.",
+                }),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
                 "system_prompt": ("STRING", {"multiline": True, "default": ""}),
                 "api_key": ("STRING", {
@@ -393,7 +435,6 @@ class LocalLLM:
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
-        import time
         return time.time() if kwargs.get("force_rerun") else ""
 
     @classmethod
