@@ -129,19 +129,27 @@ class FaceIdentify:
             },
             "optional": {
                 "source": ("STRING", {"forceInput": True, "tooltip": "Source image path for restore_json, e.g. REL_DIR/BASE_FILENAME."}),
+                "mirror_dir": ("STRING", {"forceInput": True, "tooltip": "This image's MIRROR_DIR, repeated per face so batch saves pair correctly."}),
+                "stem": ("STRING", {"forceInput": True, "tooltip": "This image's STEM, repeated per face."}),
+                "suffix_extra": ("STRING", {"default": "", "tooltip": "Appended to each suffix, e.g. _head -> _p01_head."}),
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING", "FLOAT", "STRING", "FLOAT", "STRING", "STRING", "STRING", "STRING", "STRING")
+    # Outputs after summary_json were appended later (R15); slot order is kept.
+    RETURN_TYPES = ("IMAGE", "STRING", "FLOAT", "STRING", "FLOAT", "STRING", "STRING", "STRING", "STRING", "STRING",
+                    "STRING", "STRING", "STRING")
     RETURN_NAMES = ("face_crop", "label", "score", "runner_up", "runner_up_score", "suffix", "subfolder",
-                    "crop_box_json", "restore_json", "summary_json")
-    OUTPUT_IS_LIST = (True,) * 9 + (False,)
+                    "crop_box_json", "restore_json", "summary_json", "mirror_dir", "stem", "save_dir")
+    OUTPUT_IS_LIST = (True,) * 9 + (False,) + (True,) * 3
     FUNCTION = "identify"
     CATEGORY = "🎨 DockerCPU API/Face"
     DESCRIPTION = "Identifies every face in an image against reference folders and returns per-face crops and labels as lists."
 
     def identify(self, image, face_analysis, reference_folder, threshold=0.40, margin=0.05, aggregate="max",
-                 unknown_label="unknown", crop_pad=1.6, provider="auto", source=""):
+                 unknown_label="unknown", crop_pad=1.6, provider="auto", source="", mirror_dir="", stem="", suffix_extra=""):
+        mirror_dir = (mirror_dir or "").strip().strip("/\\")
+        stem = stem or ""
+        suffix_extra = suffix_extra or ""
         if image.shape[0] != 1 or len(face_analysis["frames"]) != 1:
             raise ValueError("FaceIdentify takes a single image; feed batches as a list (e.g. from the folder loader)")
         faces = face_analysis["frames"][0]
@@ -157,6 +165,7 @@ class FaceIdentify:
         decisions = identify_faces(faces, refs, threshold, margin, aggregate, unknown_label)
 
         out = tuple([] for _ in range(9))
+        passthrough = tuple([] for _ in range(3))
         summary = []
         for i, (f, d) in enumerate(zip(faces, decisions)):
             box = square_crop_box(f["bbox"], crop_pad, W, H)
@@ -166,10 +175,13 @@ class FaceIdentify:
                        **{k: entry[k] for k in ("index", "bbox", "crop_box", "score", "runner_up", "runner_up_score", "decided_by")},
                        "kps": crop_keypoints(f, box)}
             values = (crop_image(frame, box), d["label"], d["score"], d["runner_up"], d["runner_up_score"],
-                      face_suffix(i), d["label"], json.dumps(box), json.dumps(restore))
+                      face_suffix(i) + suffix_extra, d["label"], json.dumps(box), json.dumps(restore))
             for lst, v in zip(out, values):
                 lst.append(v)
-        return out + (json.dumps(summary),)
+            save_dir = f"{d['label']}/{mirror_dir}" if mirror_dir else d["label"]
+            for lst, v in zip(passthrough, (mirror_dir, stem, save_dir)):
+                lst.append(v)
+        return out + (json.dumps(summary),) + passthrough
 
 
 # ---------------------------------------------------------------- clustering
