@@ -165,7 +165,7 @@ if not _is_test_context():
     import importlib
     PIPELINE_NODE_CLASS_MAPPINGS = {}
     PIPELINE_NODE_DISPLAY_NAME_MAPPINGS = {}
-    for _module_name in ("image_saver", "face_analysis", "face_identify", "bbox_draw", "mediapipe_device"):
+    for _module_name in ("image_saver", "prompt_loader", "face_analysis", "face_identify", "bbox_draw", "mediapipe_device"):
         try:
             _module = importlib.import_module(f".common.{_module_name}", __name__)
             PIPELINE_NODE_CLASS_MAPPINGS.update(_module.NODE_CLASS_MAPPINGS)

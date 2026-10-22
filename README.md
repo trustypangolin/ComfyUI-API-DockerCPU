@@ -177,6 +177,8 @@ Available in category: `🎨 DockerCPU API/Utilities`
 - **Load Images From Folder With Metadata** - Loads every image in an input subfolder in natural order (`img2` before `img10`), as lists at native size
   - Inputs: `folder`, `pattern` (case-insensitive glob), `recursive`, `strip_prefix` (default `originals/`), `start_index`, `limit` (0 = all)
   - Outputs (lists): `image`, `mask`, `BASE_FILENAME`, `STEM`, `REL_DIR`, `MIRROR_DIR` (`REL_DIR` minus `strip_prefix`), `SHA256`, `width`, `height`
+- **Load Prompt From File** - Pick a `.txt` file under `input/prompts/` (subfolders included, alphabetical) from a dropdown; outputs its `text`
+  - `reload`: `if file changed` (default) re-reads after you edit the file; `if value changed` only when another file is picked. Press R in ComfyUI to refresh the list
 - **Save Image With Filename** - Writes `output/<stage>/<mirror_dir>/<stem><suffix>.png` with no counter (`_00`, `_01`, ... for batches > 1)
   - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image, plus `extra_metadata` JSON as the PNG text key `restore`
   - Refuses paths outside the output folder and anything under the input folder
@@ -280,6 +282,7 @@ ComfyUI-API-DockerCPU/
 │   ├── zip_utils.py                 # ZIP archive loading
 │   ├── amd_tools.py                 # AMD GPU patch
 │   ├── image_utils.py               # Load Image With Metadata
+│   ├── prompt_loader.py             # Load Prompt From File
 │   └── text_saver.py                # Save Text With Filename
 │
 ├── schemas/                         # API schema definitions
