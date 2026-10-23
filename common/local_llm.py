@@ -1,4 +1,7 @@
 import base64
+import os
+import threading
+import time
 from io import BytesIO
 from urllib.parse import urljoin
 
@@ -17,16 +20,69 @@ except Exception:
     ROUTES_AVAILABLE = False
 
 
+DEFAULT_ENDPOINT_URL = "http://localhost:1234"
+# Environment fallbacks so the key never has to be typed into the widget (and so
+# never lands in workflow JSON or PNG metadata). LocalLLM is the name already used in G:\Ai\.env.
+ENDPOINT_ENV_VARS = ("LOCAL_LLM_ENDPOINT",)
+API_KEY_ENV_VARS = ("LOCAL_LLM_API_KEY", "LocalLLM")
+
+
+# Repo-root .env (gitignored), read only for variables missing from the environment.
+ENV_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+
+
+def _read_env_file(names):
+    """Values for `names` from the repo .env. Only the requested keys are kept;
+    nothing from the file is logged."""
+    wanted = {n.upper(): n for n in names}
+    found = {}
+    if not os.path.isfile(ENV_FILE):
+        return found
+    try:
+        with open(ENV_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                if key.lower().startswith("export "):
+                    key = key[7:].strip()
+                value = value.strip().strip("'\"")
+                if key.upper() in wanted and value:
+                    found.setdefault(wanted[key.upper()], value)
+    except OSError:
+        pass
+    return found
+
+
+def _first_env(names):
+    """First non-empty value from the environment, then from a .env file."""
+    for name in names:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    from_file = _read_env_file(names)
+    for name in names:
+        value = from_file.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def normalize_endpoint_url(endpoint_url):
-    endpoint_url = (endpoint_url or "http://localhost:1234").strip().rstrip("/")
-    if not endpoint_url:
-        endpoint_url = "http://localhost:1234"
-    return endpoint_url
+    endpoint_url = (endpoint_url or "").strip() or _first_env(ENDPOINT_ENV_VARS) or DEFAULT_ENDPOINT_URL
+    return endpoint_url.rstrip("/")
+
+
+def resolve_api_key(api_key):
+    """Widget value when set, otherwise the key from the environment."""
+    return (api_key or "").strip() or _first_env(API_KEY_ENV_VARS)
 
 
 def build_headers(api_key):
     headers = {"Content-Type": "application/json"}
-    api_key = (api_key or "").strip()
+    api_key = resolve_api_key(api_key)
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
@@ -103,6 +159,42 @@ def fetch_models(endpoint_url, api_type, api_key="", timeout=10):
     if api_type == "lmstudio_native":
         return fetch_lmstudio_models(endpoint_url, api_key, timeout)
     return fetch_openai_models(endpoint_url, api_key, timeout)
+
+
+# Server-side model combo, so saved model names pass object_info validation in
+# clients such as comfy-cli. INPUT_TYPES runs on every /object_info request,
+# so results are cached and the fetch uses a short timeout.
+MODEL_LIST_TIMEOUT = 2
+MODEL_LIST_TTL = 60
+_model_list_cache = {}
+_model_list_lock = threading.Lock()
+
+
+def model_choices():
+    """["auto"] + models from the default endpoint (env / repo .env / localhost),
+    the union of the OpenAI-compatible and LM Studio native lists. Keeps the last
+    good list (or just ["auto"]) when the endpoint is unreachable."""
+    endpoint_url = normalize_endpoint_url("")
+    with _model_list_lock:
+        cached = _model_list_cache.get(endpoint_url)
+        if cached and time.monotonic() - cached[0] < MODEL_LIST_TTL:
+            return cached[1]
+
+        models = []
+        for api_type in ("openai_compatible", "lmstudio_native"):
+            try:
+                models += [m for m in fetch_models(endpoint_url, api_type, "", MODEL_LIST_TIMEOUT) if m not in models]
+            except requests.ConnectionError:
+                break  # endpoint unreachable: don't wait out a second timeout
+            except Exception:
+                continue  # e.g. not an LM Studio server: native API missing
+
+        if models:
+            choices = ["auto"] + [m for m in models if m != "auto"]
+        else:
+            choices = cached[1] if cached else ["auto"]
+        _model_list_cache[endpoint_url] = (time.monotonic(), choices)
+        return choices
 
 
 def image_to_data_uri(image):
@@ -228,7 +320,15 @@ def extract_response_text(payload):
                 parts.append(str(item["content"]))
         if parts:
             return "\n".join(parts)
-    return str(payload)
+    # No answer text: fail loudly rather than pass the raw payload downstream as if it were the answer
+    stats = payload.get("stats") or {}
+    if stats.get("reasoning_output_tokens"):
+        raise ValueError(
+            f"Model returned reasoning but no answer ({stats.get('reasoning_output_tokens')} of "
+            f"{stats.get('total_output_tokens')} output tokens spent reasoning). "
+            "Raise max_tokens or set reasoning to 'off'."
+        )
+    raise ValueError(f"No answer text in LLM response: {str(payload)[:500]}")
 
 
 def build_openai_payload(selected_model, prompt, system_prompt, temperature, max_tokens, image=None):
@@ -253,7 +353,7 @@ def build_openai_payload(selected_model, prompt, system_prompt, temperature, max
     }
 
 
-def build_lmstudio_payload(selected_model, prompt, system_prompt, temperature, max_tokens, image=None):
+def build_lmstudio_payload(selected_model, prompt, system_prompt, temperature, max_tokens, image=None, reasoning="auto"):
     if image is not None:
         input_value = [
             {"type": "text", "content": prompt},
@@ -270,13 +370,16 @@ def build_lmstudio_payload(selected_model, prompt, system_prompt, temperature, m
     }
     if system_prompt.strip():
         payload["system_prompt"] = system_prompt
+    # "auto" omits the field so LM Studio uses the model's default; LM Studio errors if the model doesn't support the setting
+    if reasoning and reasoning != "auto":
+        payload["reasoning"] = reasoning
     return payload
 
 
 if ROUTES_AVAILABLE:
     @PromptServer.instance.routes.get("/dockercpu/local_llm/models")
     async def get_local_llm_models(request):
-        endpoint_url = request.query.get("endpoint_url", "http://localhost:1234")
+        endpoint_url = request.query.get("endpoint_url", "")
         api_key = request.query.get("api_key", "")
         timeout = int(request.query.get("timeout", "10"))
         api_type = request.query.get("api_type", "openai_compatible")
@@ -292,12 +395,23 @@ class LocalLLM:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "endpoint_url": ("STRING", {"default": "http://localhost:1234"}),
+                "endpoint_url": ("STRING", {
+                    "default": "",
+                    "tooltip": "Empty uses the LOCAL_LLM_ENDPOINT environment variable, else http://localhost:1234.",
+                }),
                 "api_type": (["openai_compatible", "lmstudio_native"], {"default": "openai_compatible"}),
-                "model": (["auto"], {"default": "auto"}),
+                "model": (model_choices(), {
+                    "default": "auto",
+                    "tooltip": "'auto' uses the first model the endpoint lists. The list comes from the default endpoint "
+                               "and is refreshed in the UI from endpoint_url.",
+                }),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
                 "system_prompt": ("STRING", {"multiline": True, "default": ""}),
-                "api_key": ("STRING", {"default": ""}),
+                "api_key": ("STRING", {
+                    "default": "",
+                    "tooltip": "Optional override. Leave empty to use LOCAL_LLM_API_KEY (or LocalLLM) from the environment; "
+                               "a key typed here is saved in the workflow and image metadata.",
+                }),
                 "temperature": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 2.0, "step": 0.05}),
                 "max_tokens": ("INT", {"default": 1024, "min": 1, "max": 32768}),
                 "timeout": ("INT", {"default": 120, "min": 1, "max": 3600}),
@@ -306,6 +420,10 @@ class LocalLLM:
             },
             "optional": {
                 "image": ("IMAGE",),
+                "reasoning": (["auto", "off", "low", "medium", "high", "on"], {
+                    "default": "auto",
+                    "tooltip": "lmstudio_native only. 'auto' uses the model's default.",
+                }),
             },
         }
 
@@ -317,14 +435,13 @@ class LocalLLM:
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
-        import time
         return time.time() if kwargs.get("force_rerun") else ""
 
     @classmethod
     def VALIDATE_INPUTS(cls, **kwargs):
         return True
 
-    def ask(self, endpoint_url, api_type, model, prompt, system_prompt, api_key, temperature, max_tokens, timeout, unload_existing_models=False, force_rerun=False, image=None):
+    def ask(self, endpoint_url, api_type, model, prompt, system_prompt, api_key, temperature, max_tokens, timeout, unload_existing_models=False, force_rerun=False, image=None, reasoning="auto"):
         if api_type not in ("openai_compatible", "lmstudio_native"):
             raise ValueError(f"Unsupported api_type: {api_type}")
 
@@ -340,7 +457,7 @@ class LocalLLM:
             if unload_existing_models:
                 unload_lmstudio_models(endpoint_url, api_key, timeout)
             selected_model = load_lmstudio_model(endpoint_url, selected_model, api_key, timeout, unload_existing_models)
-            payload = build_lmstudio_payload(selected_model, prompt, system_prompt, temperature, max_tokens, image)
+            payload = build_lmstudio_payload(selected_model, prompt, system_prompt, temperature, max_tokens, image, reasoning)
             response = requests.post(
                 lmstudio_url(endpoint_url, "chat"),
                 headers=build_headers(api_key),
