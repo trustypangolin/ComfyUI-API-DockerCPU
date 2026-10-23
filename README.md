@@ -173,14 +173,17 @@ Prefer the environment variables over typing a key into the Local LLM widget: wi
 Available in category: `🎨 DockerCPU API/Utilities`
 
 - **Load Image With Metadata** - Loads an image from the input folder and extracts embedded prompt, workflow, and EXIF metadata
-  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`, `height`, `width`, `megapixels`, `REL_DIR` (folder relative to input, e.g. `originals/1990`), `STEM` (name without extension), `SHA256` (file hash)
+  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`, `height`, `width`, `megapixels`, `REL_DIR` (folder relative to input, e.g. `originals/1990`), `STEM` (name without extension), `SHA256` (file hash), `ORIGINAL`, `ORIGINAL_SHA256` (see Provenance below)
+  - The Crop variant has the same optional `library_root` and the same two trailing outputs
 - **Load Images From Folder With Metadata** - Loads every image in an input subfolder in natural order (`img2` before `img10`), as lists at native size
   - Inputs: `folder`, `pattern` (case-insensitive glob), `recursive`, `strip_prefix` (default `originals/`), `start_index`, `limit` (0 = all)
-  - Outputs (lists): `image`, `mask`, `BASE_FILENAME`, `STEM`, `REL_DIR`, `MIRROR_DIR` (`REL_DIR` minus `strip_prefix`), `SHA256`, `width`, `height`
+  - Outputs (lists): `image`, `mask`, `BASE_FILENAME`, `STEM`, `REL_DIR`, `MIRROR_DIR` (`REL_DIR` minus `strip_prefix`), `SHA256`, `width`, `height`, `ORIGINAL`, `ORIGINAL_SHA256`
+  - **Provenance** (all three loaders): `ORIGINAL` is the PrimaryLibrary file the image derives from (`"1992 Feb/img0018.jpg"`), `ORIGINAL_SHA256` that library file's hash; both `""` when unknown. Resolved from the input PNG's `restore` chunk (carried `original` + `original_sha256`, checked against the library; or `source`, followed recursively up to 8 hops), else from `input/originals/<album>/<file>` when the library twin has the same SHA-256. Optional `library_root` widget, else env `PRIMARY_LIBRARY`, else `C:/Users/luton/OneDrive/Pictures/PrimaryLibrary`; when that folder is missing (Docker) only carried values are used, unchecked. Only the one candidate library file is hashed
 - **Load Prompt From File** - Pick a `.txt` file under `input/prompts/` (subfolders included, alphabetical) from a dropdown; outputs its `text`
   - `reload`: `if file changed` (default) re-reads after you edit the file; `if value changed` only when another file is picked. Press R in ComfyUI to refresh the list
 - **Save Image With Filename** - Writes `output/<stage>/<mirror_dir>/<stem><suffix>.png` with no counter (`_00`, `_01`, ... for batches > 1)
-  - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image, plus `extra_metadata` JSON as the PNG text key `restore`
+  - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image
+  - Always writes the PNG text key `restore`: `extra_metadata` (a JSON object, or `{}`) plus `"schema": 1`, `"original"`, `"original_sha256"` from the optional `original` / `original_sha256` inputs (wire the loader's `ORIGINAL` / `ORIGINAL_SHA256`; empty or unconnected → `null`, and they override the same keys in `extra_metadata`)
   - Refuses paths outside the output folder and anything under the input folder
 - **Load ZIP Archive** - Load PNG images from a ZIP file URL or path
 - **Load Replicate Prediction** - Load output from a Replicate prediction by ID
@@ -282,6 +285,7 @@ ComfyUI-API-DockerCPU/
 │   ├── zip_utils.py                 # ZIP archive loading
 │   ├── amd_tools.py                 # AMD GPU patch
 │   ├── image_utils.py               # Load Image With Metadata
+│   ├── provenance.py                # ORIGINAL / ORIGINAL_SHA256 resolution
 │   ├── prompt_loader.py             # Load Prompt From File
 │   └── text_saver.py                # Save Text With Filename
 │

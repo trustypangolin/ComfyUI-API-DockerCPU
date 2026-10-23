@@ -37,6 +37,8 @@ try:
 except ImportError:
     FOLDER_PATHS_AVAILABLE = False
 
+from .provenance import library_root as _library_root, resolve_original
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff", ".tif"}
 
 EXCLUDE_FILES = {
@@ -238,6 +240,16 @@ def _resolve_image_path(image):
     return image
 
 
+LIBRARY_ROOT_INPUT = ("STRING", {"default": "", "tooltip": "PrimaryLibrary folder for ORIGINAL / ORIGINAL_SHA256. "
+                                 "Empty = $PRIMARY_LIBRARY, else C:/Users/luton/OneDrive/Pictures/PrimaryLibrary."})
+
+
+def _original(image_path, library_root):
+    """(ORIGINAL, ORIGINAL_SHA256) for an input file: library '<album>/<file>' and its hash, or ('', '')."""
+    input_dir = folder_paths.get_input_directory() if FOLDER_PATHS_AVAILABLE else os.getcwd()
+    return resolve_original(image_path, input_dir, _library_root(library_root))
+
+
 def _pil_to_tensor(image):
     if image.mode == "RGBA":
         bg = Image.new("RGBA", image.size, (0, 0, 0, 255))
@@ -317,6 +329,8 @@ class LoadImageWithMetadata:
         REL_DIR:         Directory relative to the input folder, forward slashes
         STEM:            Filename without extension
         SHA256:          Hex digest of the file bytes
+        ORIGINAL:        PrimaryLibrary '<album>/<file>' this image derives from, or ''
+        ORIGINAL_SHA256: Hex digest of that library file, or ''
     """
 
     @classmethod
@@ -326,6 +340,9 @@ class LoadImageWithMetadata:
                 "required": {
                     "image": ("STRING", {"default": "", "tooltip": "Path to image file"}),
                 },
+                "optional": {
+                    "library_root": LIBRARY_ROOT_INPUT,
+                },
             }
 
         input_files = _scan_folder_files(folder_paths.get_input_directory())
@@ -334,18 +351,21 @@ class LoadImageWithMetadata:
             "required": {
                 "image": (input_files, {"image_upload": True}),
             },
+            "optional": {
+                "library_root": LIBRARY_ROOT_INPUT,
+            },
         }
 
     # New outputs are appended only, so saved workflows keep their slot indices.
     RETURN_TYPES = ("IMAGE", "MASK", "JSON", "METADATA_RAW", "STRING", "STRING", "INT", "INT", "FLOAT",
-                    "STRING", "STRING", "STRING")
+                    "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("image", "mask", "prompt", "Metadata RAW", "BASE_FILENAME", "BASE_DIR", "height", "width", "megapixels",
-                    "REL_DIR", "STEM", "SHA256")
+                    "REL_DIR", "STEM", "SHA256", "ORIGINAL", "ORIGINAL_SHA256")
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image from the input folder and extracts embedded prompt, workflow, and metadata."
 
-    def execute(self, image):
+    def execute(self, image, library_root=""):
         image_path = _resolve_image_path(image)
         base_filename = Path(image_path).name
         base_dir = os.path.dirname(image_path)
@@ -356,10 +376,11 @@ class LoadImageWithMetadata:
 
         megapixels = round((width * height) / 1_000_000.0, 4)
         return (tensor, mask_tensor, prompt, metadata, base_filename, base_dir, height, width, megapixels,
-                _input_rel_dir(image_path), Path(image_path).stem, _file_sha256(image_path))
+                _input_rel_dir(image_path), Path(image_path).stem, _file_sha256(image_path),
+                *_original(image_path, library_root))
 
     @classmethod
-    def IS_CHANGED(cls, image):
+    def IS_CHANGED(cls, image, library_root=""):
         image_path = _resolve_image_path(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
@@ -404,6 +425,8 @@ class LoadImageWithMetadataCrop:
         REL_DIR:           Directory relative to the input folder, forward slashes
         STEM:              Filename without extension
         SHA256:            Hex digest of the file bytes
+        ORIGINAL:          PrimaryLibrary '<album>/<file>' this image derives from, or ''
+        ORIGINAL_SHA256:   Hex digest of that library file, or ''
     """
 
     @classmethod
@@ -418,6 +441,7 @@ class LoadImageWithMetadataCrop:
                     "crop_y": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Top edge of crop. -1 disables cropping."}),
                     "crop_width": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Crop width. -1 disables cropping."}),
                     "crop_height": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Crop height. -1 disables cropping."}),
+                    "library_root": LIBRARY_ROOT_INPUT,
                 },
             }
 
@@ -432,6 +456,7 @@ class LoadImageWithMetadataCrop:
                 "crop_y": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Top edge of crop. -1 disables cropping."}),
                 "crop_width": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Crop width. -1 disables cropping."}),
                 "crop_height": ("INT", {"default": -1, "min": -1, "max": 999999, "step": 1, "tooltip": "Crop height. -1 disables cropping."}),
+                "library_root": LIBRARY_ROOT_INPUT,
             },
         }
 
@@ -442,6 +467,7 @@ class LoadImageWithMetadataCrop:
         "INT", "INT", "INT", "INT",
         "FLOAT", "FLOAT",
         "STRING", "STRING", "STRING",
+        "STRING", "STRING",
     )
     RETURN_NAMES = (
         "cropped_image", "mask", "original_image",
@@ -450,12 +476,13 @@ class LoadImageWithMetadataCrop:
         "height", "width", "original_height", "original_width",
         "zoom_factor", "megapixels",
         "REL_DIR", "STEM", "SHA256",
+        "ORIGINAL", "ORIGINAL_SHA256",
     )
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads an image with metadata and optionally crops a region, returning both the cropped and original images plus a zoom factor."
 
-    def execute(self, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
+    def execute(self, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1, library_root=""):
         image_path = _resolve_image_path(image)
         base_filename = Path(image_path).name
         base_dir = os.path.dirname(image_path)
@@ -484,10 +511,11 @@ class LoadImageWithMetadataCrop:
             h, w, orig_h, orig_w,
             zoom_factor, megapixels,
             _input_rel_dir(image_path), Path(image_path).stem, _file_sha256(image_path),
+            *_original(image_path, library_root),
         )
 
     @classmethod
-    def IS_CHANGED(cls, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1):
+    def IS_CHANGED(cls, image, crop_x=-1, crop_y=-1, crop_width=-1, crop_height=-1, library_root=""):
         image_path = _resolve_image_path(image)
         m = hashlib.sha256()
         with open(image_path, 'rb') as f:
@@ -552,6 +580,8 @@ class LoadImagesFromFolderWithMetadata:
         MIRROR_DIR:      REL_DIR with strip_prefix removed ('originals/1990' -> '1990')
         SHA256:          Hex digest of the file bytes
         width, height:   Image size after EXIF transpose
+        ORIGINAL:        PrimaryLibrary '<album>/<file>' each image derives from, or ''
+        ORIGINAL_SHA256: Hex digest of that library file, or ''
     """
 
     @classmethod
@@ -566,11 +596,15 @@ class LoadImagesFromFolderWithMetadata:
                 "start_index": ("INT", {"default": 0, "min": 0, "max": 0xffffffff, "step": 1, "tooltip": "Skip this many files (after sorting)."}),
                 "limit": ("INT", {"default": 0, "min": 0, "max": 0xffffffff, "step": 1, "tooltip": "Maximum files to load. 0 = all."}),
             },
+            "optional": {
+                "library_root": LIBRARY_ROOT_INPUT,
+            },
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("image", "mask", "BASE_FILENAME", "STEM", "REL_DIR", "MIRROR_DIR", "SHA256", "width", "height")
-    OUTPUT_IS_LIST = (True,) * 9
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT", "STRING", "STRING")
+    RETURN_NAMES = ("image", "mask", "BASE_FILENAME", "STEM", "REL_DIR", "MIRROR_DIR", "SHA256", "width", "height",
+                    "ORIGINAL", "ORIGINAL_SHA256")
+    OUTPUT_IS_LIST = (True,) * 11
     FUNCTION = "execute"
     CATEGORY = "🎨 DockerCPU API/Utilities"
     DESCRIPTION = "Loads all images in an input subfolder (natural order) as lists, with filename, folder and hash outputs for mirrored saving."
@@ -581,7 +615,8 @@ class LoadImagesFromFolderWithMetadata:
         end = start_index + limit if limit > 0 else None
         return files[start_index:end]
 
-    def execute(self, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0):
+    def execute(self, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0,
+                library_root=""):
         files = self._select(folder, pattern, recursive, start_index, limit)
         if not files:
             raise ValueError(f"No images matched pattern {pattern!r} in input folder {folder!r} "
@@ -594,13 +629,15 @@ class LoadImagesFromFolderWithMetadata:
             _, _, _, tensor, mask_tensor, width, height = _load_image_with_metadata(image_path)
             rel_dir = rel.rsplit("/", 1)[0] if "/" in rel else ""
             values = (tensor, mask_tensor, Path(rel).name, Path(rel).stem, rel_dir,
-                      _strip_dir_prefix(rel_dir, strip_prefix), _file_sha256(image_path), width, height)
+                      _strip_dir_prefix(rel_dir, strip_prefix), _file_sha256(image_path), width, height,
+                      *_original(image_path, library_root))
             for lst, value in zip(out, values):
                 lst.append(value)
         return out
 
     @classmethod
-    def IS_CHANGED(cls, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0):
+    def IS_CHANGED(cls, folder, pattern="*", recursive=False, strip_prefix="originals/", start_index=0, limit=0,
+                   library_root=""):
         # Cheap change detection: the selected file list plus each file's size and mtime.
         try:
             files = cls._select(folder, pattern, recursive, start_index, limit)

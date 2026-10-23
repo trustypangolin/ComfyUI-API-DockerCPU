@@ -29,13 +29,21 @@ def _tensor_to_pil(image):
     return Image.fromarray(arr)
 
 
-def _parse_extra_metadata(extra_metadata):
-    if not extra_metadata or not extra_metadata.strip():
-        return None
-    try:
-        return json.dumps(json.loads(extra_metadata))
-    except json.JSONDecodeError as e:
-        raise ValueError(f"extra_metadata is not valid JSON: {e}") from e
+def _restore_text(extra_metadata, original, original_sha256):
+    """The 'restore' chunk: extra_metadata plus schema 1 and the provenance keys
+    (empty -> null). ASCII JSON, so it stays a valid tEXt chunk."""
+    restore = {}
+    if extra_metadata and extra_metadata.strip():
+        try:
+            restore = json.loads(extra_metadata)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"extra_metadata is not valid JSON: {e}") from e
+        if not isinstance(restore, dict):
+            raise ValueError(f"extra_metadata must be a JSON object, got {type(restore).__name__}")
+    restore["schema"] = 1
+    restore["original"] = (original or "").strip() or None
+    restore["original_sha256"] = (original_sha256 or "").strip() or None
+    return json.dumps(restore, ensure_ascii=True)
 
 
 class SaveImageWithFilename:
@@ -44,7 +52,8 @@ class SaveImageWithFilename:
 
     A batch of more than one image gets _00, _01, ... appended to each name.
     Embeds prompt/workflow like SaveImage (unless --disable-metadata or
-    embed_workflow is off) and extra_metadata as the PNG tEXt key 'restore'.
+    embed_workflow is off). Always writes the PNG tEXt key 'restore':
+    extra_metadata plus schema 1, original and original_sha256 (null when empty).
 
     Outputs:
         saved_path: Absolute path(s) of the files, newline-separated for batches
@@ -64,6 +73,8 @@ class SaveImageWithFilename:
             "optional": {
                 "suffix": ("STRING", {"default": "", "tooltip": "Appended to the stem, e.g. _p01_head."}),
                 "extra_metadata": ("STRING", {"default": "", "multiline": True, "tooltip": "Optional JSON stored as PNG text key 'restore'."}),
+                "original": ("STRING", {"forceInput": True, "tooltip": "ORIGINAL from the loader; written to 'restore' (null when empty)."}),
+                "original_sha256": ("STRING", {"forceInput": True, "tooltip": "ORIGINAL_SHA256 from the loader; written to 'restore' (null when empty)."}),
             },
             "hidden": {
                 "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO",
@@ -78,12 +89,12 @@ class SaveImageWithFilename:
     DESCRIPTION = "Saves images to output/<stage>/<mirror_dir>/<stem><suffix>.png with no counter. Never writes into the input folder."
 
     def save_images(self, images, stage, mirror_dir, stem, if_exists="error", embed_workflow=True,
-                    suffix="", extra_metadata="", prompt=None, extra_pnginfo=None):
+                    suffix="", extra_metadata="", original="", original_sha256="", prompt=None, extra_pnginfo=None):
         stem = clean_name_part(stem, "stem").strip()
         if not stem:
             raise ValueError("stem is empty; wire STEM from the loader or type a name")
         suffix = clean_name_part(suffix, "suffix")
-        restore_text = _parse_extra_metadata(extra_metadata)
+        restore_text = _restore_text(extra_metadata, original, original_sha256)
 
         batch = len(images)
         width = max(2, len(str(batch - 1)))
@@ -103,8 +114,7 @@ class SaveImageWithFilename:
             if extra_pnginfo is not None:
                 for key in extra_pnginfo:
                     metadata.add_text(key, json.dumps(extra_pnginfo[key]))
-        if restore_text is not None:
-            metadata.add_text("restore", restore_text)
+        metadata.add_text("restore", restore_text)
 
         output_dir = folder_paths.get_output_directory()
         results = []
