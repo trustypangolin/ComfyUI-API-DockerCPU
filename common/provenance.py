@@ -7,10 +7,13 @@ or ("", "") when it can't be determined. In order, stopping at the first that ap
      after confirming the library file's hash when the library is reachable.
   2. The chunk has only 'source' (an input-relative path): resolve that, recursively.
   3. The file is input/originals/<album>/<file> and the library twin has the same SHA-256.
+  4. Search the library by SHA-256, hashing only image files whose size equals the
+     input's. Exactly one match: that file. None, or 2+: ("", "") and a warning.
+Step 4 applies to the file a step-2 chain ends at, never to an intermediate PNG.
 When the library root is not reachable (the Docker deployment) only step 1 applies.
 
-Only the single candidate library file is ever hashed: library files may be
-OneDrive cloud-only placeholders that download when read.
+Library files may be OneDrive cloud-only placeholders that download when read, so
+only same-size candidates are ever hashed; os.stat doesn't download them.
 """
 
 import hashlib
@@ -18,6 +21,7 @@ import json
 import logging
 import os
 import re
+import time
 
 from PIL import Image
 from PIL.PngImagePlugin import PngImageFile
@@ -26,10 +30,13 @@ DEFAULT_LIBRARY_ROOT = "C:/Users/luton/OneDrive/Pictures/PrimaryLibrary"
 LIBRARY_ENV = "PRIMARY_LIBRARY"
 ORIGINALS_DIR = "originals"
 MAX_SOURCE_DEPTH = 8
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".heic"}
+SIZE_INDEX_TTL = 300  # seconds; a folder load walks the library once, not once per file
 
 _SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 _DRIVE_RE = re.compile(r"^[A-Za-z]:")
 _sha_cache = {}
+_size_index_cache = {}  # normcase(lib_root) -> (built_at, {size: [real-case rel, ...]})
 
 
 def library_root(widget_value=""):
@@ -110,6 +117,53 @@ def _library_hash(lib_root, rel):
         return None, None
 
 
+def _size_index(lib_root):
+    """{st_size: [rel, ...]} of the library's image files, rel spelled as on disk.
+    Cached for SIZE_INDEX_TTL seconds per library root. Only stats files."""
+    key = os.path.normcase(os.path.realpath(lib_root))
+    cached = _size_index_cache.get(key)
+    if cached is not None and time.monotonic() - cached[0] < SIZE_INDEX_TTL:
+        return cached[1]
+    index = {}
+    for dirpath, _dirs, files in os.walk(lib_root):
+        for name in files:
+            if os.path.splitext(name)[1].lower() not in IMAGE_EXTS:
+                continue
+            full = os.path.join(dirpath, name)
+            try:
+                size = os.stat(full).st_size
+            except OSError:
+                continue
+            index.setdefault(size, []).append(os.path.relpath(full, lib_root).replace("\\", "/"))
+    _size_index_cache[key] = (time.monotonic(), index)
+    return index
+
+
+def _search_library(path, lib_root):
+    """Step 4: (rel, sha256) of the one library file with path's bytes, or ("", "")."""
+    try:
+        size = os.stat(path).st_size
+        digest = _sha256(path)
+    except OSError:
+        return "", ""
+    matches, unreadable = [], []
+    for rel in _size_index(lib_root).get(size, []):
+        try:
+            if _sha256(os.path.join(lib_root, rel)) == digest:
+                matches.append(rel)
+        except OSError as e:
+            unreadable.append(rel)
+            logging.warning(f"[ComfyUI-API-DockerCPU] provenance: cannot read library file {rel}: {e}")
+    matches.sort()
+    if len(matches) == 1 and not unreadable:
+        return matches[0], digest
+    # An unreadable same-size file might also match, so a single match isn't proof of uniqueness.
+    logging.warning(f"[ComfyUI-API-DockerCPU] provenance: no unique library original for {path}: "
+                    f"{len(matches)} library files with these bytes {matches}"
+                    + (f", unreadable same-size files {sorted(unreadable)}" if unreadable else ""))
+    return "", ""
+
+
 def _input_rel(path, input_dir):
     """path relative to input_dir with forward slashes, or None if it lies outside."""
     real_input = os.path.realpath(input_dir)
@@ -152,15 +206,18 @@ def resolve_original(path, input_dir, lib_root, _depth=0):
             return "", ""
         return resolve_original(source_path, input_dir, lib_root, _depth + 1)
 
+    if not os.path.isfile(path):
+        return "", ""
+
     # 3. A byte copy of a library file under input/originals/.
     rel = _input_rel(path, input_dir)
-    if rel is None or not rel.startswith(ORIGINALS_DIR + "/") or not os.path.isfile(path):
-        return "", ""
-    real, lib_sha = _library_hash(lib_root, rel[len(ORIGINALS_DIR) + 1:])
-    if lib_sha is None:
-        return "", ""
-    try:
-        same = _sha256(path) == lib_sha
-    except OSError:
-        return "", ""
-    return (real, lib_sha) if same else ("", "")
+    if rel is not None and rel.startswith(ORIGINALS_DIR + "/"):
+        real, lib_sha = _library_hash(lib_root, rel[len(ORIGINALS_DIR) + 1:])
+        try:
+            if lib_sha is not None and _sha256(path) == lib_sha:
+                return real, lib_sha
+        except OSError:
+            return "", ""
+
+    # 4. The same bytes anywhere in the library.
+    return _search_library(path, lib_root)

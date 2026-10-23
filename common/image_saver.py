@@ -4,6 +4,7 @@ Filename-preserving image saver for ComfyUI-API-DockerCPU
 - SaveImageWithFilename: Writes output/<stage>/<mirror_dir>/<stem><suffix>.png
   with no counter, so pipeline stages mirror the original's folder and name.
   Refuses to write under the input directory (where the originals live).
+  With require_original, refuses to save when there is no library original.
 """
 
 import json
@@ -54,6 +55,7 @@ class SaveImageWithFilename:
     Embeds prompt/workflow like SaveImage (unless --disable-metadata or
     embed_workflow is off). Always writes the PNG tEXt key 'restore':
     extra_metadata plus schema 1, original and original_sha256 (null when empty).
+    With require_original on, an empty original or original_sha256 raises and nothing is written.
 
     Outputs:
         saved_path: Absolute path(s) of the files, newline-separated for batches
@@ -75,6 +77,7 @@ class SaveImageWithFilename:
                 "extra_metadata": ("STRING", {"default": "", "multiline": True, "tooltip": "Optional JSON stored as PNG text key 'restore'."}),
                 "original": ("STRING", {"forceInput": True, "tooltip": "ORIGINAL from the loader; written to 'restore' (null when empty)."}),
                 "original_sha256": ("STRING", {"forceInput": True, "tooltip": "ORIGINAL_SHA256 from the loader; written to 'restore' (null when empty)."}),
+                "require_original": ("BOOLEAN", {"default": False, "tooltip": "Raise and save nothing when original or original_sha256 is empty, instead of writing null."}),
             },
             "hidden": {
                 "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO",
@@ -89,12 +92,18 @@ class SaveImageWithFilename:
     DESCRIPTION = "Saves images to output/<stage>/<mirror_dir>/<stem><suffix>.png with no counter. Never writes into the input folder."
 
     def save_images(self, images, stage, mirror_dir, stem, if_exists="error", embed_workflow=True,
-                    suffix="", extra_metadata="", original="", original_sha256="", prompt=None, extra_pnginfo=None):
+                    suffix="", extra_metadata="", original="", original_sha256="", require_original=False,
+                    prompt=None, extra_pnginfo=None):
         stem = clean_name_part(stem, "stem").strip()
         if not stem:
             raise ValueError("stem is empty; wire STEM from the loader or type a name")
         suffix = clean_name_part(suffix, "suffix")
         restore_text = _restore_text(extra_metadata, original, original_sha256)
+        if require_original:
+            restore = json.loads(restore_text)
+            if not restore["original"] or not restore["original_sha256"]:
+                source = restore.get("source") or "/".join(p for p in (mirror_dir.strip(), stem + suffix) if p)
+                raise ValueError(f"restore provenance: no library original for {source}; run tools/resolve_original.py")
 
         batch = len(images)
         width = max(2, len(str(batch - 1)))
