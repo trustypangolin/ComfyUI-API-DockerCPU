@@ -222,6 +222,10 @@ On touch devices (e.g. iPad, detected via `navigator.maxTouchPoints`), this exte
 
 Palm rejection: **Settings → DockerCPU → Pencil → Ignore finger touches** blocks all finger input, so you can rest your hand on the screen while using the pencil. After the first pencil tap, a floating **✏️** toggle appears in the bottom-right corner to switch this on and off. A finger can always tap the toggle, so you can't lock yourself out. Hide the toggle with **Show pencil toggle when a pencil is used**. Apple Pencil double-tap and squeeze aren't supported: Safari doesn't make them available to web pages. Desktop mouse/trackpad usage is unaffected. See [web/touch_usability.js](web/touch_usability.js).
 
+### Link Chain Highlight
+
+Tap or click the body of any link (not its centre dot, which keeps its menu) to animate the whole chain that link belongs to: a pulsing glow in the link's colour with white dashes running from source to destination, along reroutes, plus outlines on every node in the chain (`SOURCE` and `END` labelled). The chain follows the link's type through nodes: upstream through inputs of the same type, downstream through outputs of the same type, so `Load Image → Upscale → Sharpen → VAE Encode` lights up end to end and stops at VAE Encode (IMAGE in, LATENT out). `*` slots such as legacy Reroute nodes pass the type through; Set/Get-style virtual links aren't followed. Tap the same link again, tap empty canvas or press Esc to clear; Shift/Alt drags on links work as before. Turn it off in **Settings → DockerCPU → Links**. Classic canvas; with Nodes 2.0 the links animate but node outlines are skipped. See [web/link_chain.js](web/link_chain.js).
+
 ## Supported Models
 
 ### Replicate Models
