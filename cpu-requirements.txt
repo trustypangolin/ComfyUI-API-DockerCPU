@@ -17,3 +17,5 @@
 torch
 torchvision
 torchaudio
+# Face Analyze / Face Similarity nodes (CPU build; GPU hosts use onnxruntime-gpu instead)
+onnxruntime

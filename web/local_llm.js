@@ -34,7 +34,8 @@ app.registerExtension({
 
                 const previous = modelWidget.value;
                 const params = new URLSearchParams({
-                    endpoint_url: endpointWidget.value || "http://localhost:1234",
+                    // Empty lets the server fall back to LOCAL_LLM_ENDPOINT, then localhost
+                    endpoint_url: endpointWidget.value || "",
                     api_key: apiKeyWidget?.value || "",
                     api_type: apiTypeWidget?.value || "openai_compatible",
                     timeout: String(timeoutWidget?.value || 10),

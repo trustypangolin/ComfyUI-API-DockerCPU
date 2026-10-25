@@ -162,19 +162,59 @@ python tests/test_schemas.py
 | `REPLICATE_API_TOKEN` | Replicate API token | Yes |
 | `FAL_KEY` | Fal.ai API key | Yes |
 | `HF_TOKEN` | HuggingFace token | No (required for private repos) |
+| `LOCAL_LLM_API_KEY` | API key for the Local LLM node when its `api_key` widget is empty. `LocalLLM` is also accepted | No (LM Studio needs none) |
+| `LOCAL_LLM_ENDPOINT` | Endpoint for the Local LLM node when its `endpoint_url` widget is empty (default `http://localhost:1234`) | No |
 | `DEBUG_API_TRUSTYPANGOLIN` | Enable debug output | No |
+
+Prefer the environment variables over typing a key into the Local LLM widget: widget values are saved in the workflow JSON and embedded in every output image's metadata. If a Local LLM variable isn't set in the environment, the node reads it from `.env` at this repo's root (gitignored). Only the Local LLM keys are read from that file.
 
 ### Utility Nodes
 
 Available in category: `🎨 DockerCPU API/Utilities`
 
 - **Load Image With Metadata** - Loads an image from the input folder and extracts embedded prompt, workflow, and EXIF metadata
-  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`
+  - Outputs: `IMAGE`, `MASK`, `prompt` (JSON), `Metadata RAW`, `BASE_FILENAME`, `BASE_DIR`, `height`, `width`, `megapixels`, `REL_DIR` (folder relative to input, e.g. `originals/1990`), `STEM` (name without extension), `SHA256` (file hash), `ORIGINAL`, `ORIGINAL_SHA256` (see Provenance below)
+  - The Crop variant has the same optional `library_root` and the same two trailing outputs
+- **Load Images From Folder With Metadata** - Loads every image in an input subfolder in natural order (`img2` before `img10`), as lists at native size
+  - Inputs: `folder`, `pattern` (case-insensitive glob), `recursive`, `strip_prefix` (default `originals/`), `start_index`, `limit` (0 = all)
+  - Outputs (lists): `image`, `mask`, `BASE_FILENAME`, `STEM`, `REL_DIR`, `MIRROR_DIR` (`REL_DIR` minus `strip_prefix`), `SHA256`, `width`, `height`, `ORIGINAL`, `ORIGINAL_SHA256`
+  - **Provenance** (all three loaders): `ORIGINAL` is the PrimaryLibrary file the image derives from (`"1992 Feb/img0018.jpg"`), `ORIGINAL_SHA256` that library file's hash; both `""` when unknown. Resolved from the input PNG's `restore` chunk (carried `original` + `original_sha256`, checked against the library; or `source`, followed recursively up to 8 hops), else from `input/originals/<album>/<file>` when the library twin has the same SHA-256, else by searching the library for the same SHA-256 (exactly one match wins; none or several → `""` and a warning listing them). For a `source` chain the search uses the file the chain ends at. Optional `library_root` widget, else env `PRIMARY_LIBRARY`, else `C:/Users/luton/OneDrive/Pictures/PrimaryLibrary`; when that folder is missing (Docker) only carried values are used, unchecked. The search only hashes library images whose byte size equals the input's (`os.stat` doesn't download OneDrive cloud-only files; reading does); the size index is cached for 5 minutes
+- **Load Prompt From File** - Pick a `.txt` file under `input/prompts/` (subfolders included, alphabetical) from a dropdown; outputs its `text`
+  - `reload`: `if file changed` (default) re-reads after you edit the file; `if value changed` only when another file is picked. Press R in ComfyUI to refresh the list
+  - Subfolders show as `📁` submenus at every depth (`web/prompt_loader.js`, classic canvas only)
+- **Save Image With Filename** - Writes `output/<stage>/<mirror_dir>/<stem><suffix>.png` with no counter (`_00`, `_01`, ... for batches > 1)
+  - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image
+  - Always writes the PNG text key `restore`: `extra_metadata` (a JSON object, or `{}`) plus `"schema": 1`, `"original"`, `"original_sha256"` from the optional `original` / `original_sha256` inputs (wire the loader's `ORIGINAL` / `ORIGINAL_SHA256`; empty or unconnected → `null`, and they override the same keys in `extra_metadata`)
+  - `require_original` (default off): when `original` or `original_sha256` is empty, raise `restore provenance: no library original for …` and save nothing, instead of writing `null`
+  - Refuses paths outside the output folder and anything under the input folder
 - **Load ZIP Archive** - Load PNG images from a ZIP file URL or path
 - **Load Replicate Prediction** - Load output from a Replicate prediction by ID
 - **Save AMD Video** - Save video with AMD GPU audio fix patch
 - **Save Text With Filename** - Save text content to a file named after the source image
   - Inputs: `text`, `base_dir`, `base_filename`, `replace_extension` (BOOLEAN), `extension` (STRING)
+  - `output_mode`: `base_dir` (write into `base_dir`) or `output_stage` (same `stage` / `mirror_dir` / `stem` / `suffix` path rule as Save Image With Filename)
+  - Refuses to write under the input folder unless `allow_input_dir` is on; `if_exists` defaults to `overwrite`
+
+### Face Nodes
+
+Available in category: `🎨 DockerCPU API/Face`. All run on CPU; a GPU is used when available.
+
+- **Face Analyze (InsightFace ONNX)** - SCRFD detection + 512-d ArcFace embeddings via `onnxruntime` (no `insightface` package). Models from `models/insightface` (e.g. `buffalo_l/det_10g.onnx`, `buffalo_l/w600k_r50.onnx`); add an `insightface:` key to `extra_model_paths.yaml` if your models live elsewhere
+  - `sort`: `left_to_right` (default, box centre-x) or `score`; applied to every output, so face *k* is the same face everywhere
+  - Outputs: `bboxes` (native `BOUNDING_BOX`), `face_analysis`, `face_count`, `scores`, `faces_json` (`{frame, index, x, y, width, height, score}`, index 1-based)
+- **Draw Numbered BBoxes** - Draws boxes with legible number labels (PIL only); accepts the same `BOUNDING_BOX` shapes as native Draw BBoxes
+  - Inputs: `image`, `bboxes`, `sort` (`as_given` / `left_to_right`), `start_index`, `line_width` (0 = auto), `font_scale` (label height as a fraction of the short edge, 0 = auto), `color`, `show_score`
+  - Outputs: `image`, `bboxes` (in drawn order), `labels_json`
+- **Face Similarity (ArcFace)** - Cosine similarity of one face against a `reference_analysis` and/or a `reference_folder` of images and `.npy` embeddings (subfolder names become labels)
+  - Outputs: `best_score`, `best_match`, `ranking` (JSON)
+- **Face Identify (ArcFace)** - Every face in one image vs a reference folder (`<folder>/<Label>/*.png|jpg|npy`, relative to the input folder or absolute). Per-label scores combine by `max` or `mean_top3`; a label is assigned when the best score reaches `threshold` and beats the best other label by `margin`, else `unknown_label`
+  - List outputs, one per face: `face_crop` (square, `crop_pad` × bbox, native resolution), `label`, `score`, `runner_up`, `runner_up_score`, `suffix` (`_p01`…), `subfolder`, `crop_box_json`, `restore_json` (wire into Save Image With Filename `extra_metadata`); plus `summary_json`; then `mirror_dir`, `stem` (the optional inputs repeated per face) and `save_dir` (`<label>/<mirror_dir>`), so batch runs pair each face with its own image when saving. Optional `suffix_extra` is appended to each suffix (`_p01_head`)
+- **Face Cluster (ArcFace)** - Batch node: groups all faces from a folder (average-linkage, cosine distance ≤ `distance_threshold`) into `cluster_01` (largest) … and `singles`, to bootstrap reference folders
+- **Collect Labelled Faces** - Reads a review done by moving crops between `<review_root>/<Label>/<folder>/` folders into a CSV (`changed` = moved from the original label). Optionally copies confirmed crops into `<references_root>/<Label>/` under the input folder (needs `allow_input_dir`; never `originals/`; honours `exclude_list` and `skip_labels`)
+- Face crops saved with `restore_json` carry their face keypoints, so they work as references without re-detection
+- **Load Face Detection Model (MediaPipe, device)** - Native MediaPipe face landmarker loaded on `cpu` or the `default` device; works with the native MediaPipe detect / mask nodes
+
+Install `onnxruntime` (CPU) or `onnxruntime-gpu` for the InsightFace nodes; `cpu-requirements.txt` includes the CPU build.
 
 ### Touch/Pencil Usability
 
@@ -251,6 +291,8 @@ ComfyUI-API-DockerCPU/
 │   ├── zip_utils.py                 # ZIP archive loading
 │   ├── amd_tools.py                 # AMD GPU patch
 │   ├── image_utils.py               # Load Image With Metadata
+│   ├── provenance.py                # ORIGINAL / ORIGINAL_SHA256 resolution
+│   ├── prompt_loader.py             # Load Prompt From File
 │   └── text_saver.py                # Save Text With Filename
 │
 ├── schemas/                         # API schema definitions
