@@ -122,6 +122,23 @@ def test_node_execute(pl, table, monkeypatch):
         node.execute("captions.csv", 0, "", location="moon")
 
 
+def test_downloaded_table_in_input_root(pl, tmp_path, monkeypatch):
+    """A URL-downloading API wrapper (Vast comfyui-json) leaves input/<md5>.txt; the node finds and sniffs it."""
+    import types
+    (tmp_path / "prompts").mkdir()
+    (tmp_path / "0123abcd.txt").write_text(CSV_TEXT, encoding="utf-8")
+    within = lambda base, p: os.path.commonpath([os.path.abspath(base), os.path.abspath(p)]) == os.path.abspath(base)
+    fake = types.SimpleNamespace(get_input_directory=lambda: str(tmp_path), is_within_directory=within)
+    monkeypatch.setattr(pl, "folder_paths", fake, raising=False)
+    assert pl.LoadCaptionPrompt.VALIDATE_INPUTS("0123abcd.txt", "Alice = X") is True
+    out = pl.LoadCaptionPrompt().execute("0123abcd.txt", 1, "Alice = X")["result"]
+    assert out[0] == "X and Bella on a beach."
+    (tmp_path / "prompts" / "notes.txt").write_text("x", encoding="utf-8")
+    assert "Not a .csv" in pl.LoadCaptionPrompt.VALIDATE_INPUTS("notes.txt")
+    assert "not found" in pl.LoadCaptionPrompt.VALIDATE_INPUTS("sub/0123abcd.txt")
+    assert "outside" in pl.LoadCaptionPrompt.VALIDATE_INPUTS("../x.csv")
+
+
 @pytest.mark.skipif(not os.path.isfile(REAL_CSV), reason="captions-2.csv not present")
 def test_real_table(pl):
     columns, rows = pl.load_caption_table(REAL_CSV)

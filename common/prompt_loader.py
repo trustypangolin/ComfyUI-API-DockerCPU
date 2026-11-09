@@ -198,6 +198,31 @@ def _read_parquet(path):
     return columns, rows
 
 
+def _caption_format(path):
+    """'.csv' or '.parquet' from the extension, or from the content when the extension is
+    something else (an API wrapper that downloads a URL into input/ may name it .txt or .bin)."""
+    ext = os.path.splitext(path)[1].lower()
+    if ext in CAPTION_EXTENSIONS:
+        return ext
+    with open(path, "rb") as f:
+        return ".parquet" if f.read(4) == b"PAR1" else ".csv"
+
+
+def _resolve_caption_file(caption_file):
+    """Absolute path of a caption table: input/prompts/<caption_file>, or, for a bare file
+    name not found there, input/<caption_file> (where URL-downloading API wrappers such as
+    the Vast.ai / ai-dock comfyui-json worker put files). Never outside the input folder."""
+    target = _resolve_prompt_file(caption_file)
+    name = caption_file.replace("\\", "/")
+    if os.path.isfile(target) or "/" in name:
+        return target
+    base = folder_paths.get_input_directory()
+    fallback = os.path.abspath(os.path.join(base, name))
+    if folder_paths.is_within_directory(base, fallback) and os.path.isfile(fallback):
+        return fallback
+    return target
+
+
 def load_caption_table(path):
     """(columns, rows) of a .csv or .parquet caption table, cached until the file changes."""
     st = os.stat(path)
@@ -205,7 +230,7 @@ def load_caption_table(path):
     cached = _table_cache.get(key)
     if cached and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
         return cached[2], cached[3]
-    ext = os.path.splitext(path)[1].lower()
+    ext = _caption_format(path)
     if ext == ".csv":
         columns, rows = _read_csv(path)
     elif ext == ".parquet":
@@ -429,7 +454,7 @@ class LoadCaptionPrompt:
                 aspect_ratio="any", nudity="any", location="", max_people=0, min_artistic_quality=0.0,
                 max_erotic_score=1.0, max_pornographic_score=1.0, megapixels=1.0, caption_column="Caption"):
         pairs = parse_replacements(replacements)
-        columns, rows = load_caption_table(_resolve_prompt_file(caption_file))
+        columns, rows = load_caption_table(_resolve_caption_file(caption_file))
         keep = filter_rows(columns, rows, caption_column=caption_column, contains=contains, exclude=exclude,
                            aspect_ratio=aspect_ratio, nudity=nudity, location=location, max_people=max_people,
                            min_artistic_quality=min_artistic_quality, max_erotic_score=max_erotic_score,
@@ -452,7 +477,7 @@ class LoadCaptionPrompt:
     @classmethod
     def IS_CHANGED(cls, caption_file, **kwargs):
         try:
-            st = os.stat(_resolve_prompt_file(caption_file))
+            st = os.stat(_resolve_caption_file(caption_file))
             return f"{st.st_mtime_ns}:{st.st_size}"
         except Exception as e:
             return str(e)
@@ -460,13 +485,14 @@ class LoadCaptionPrompt:
     @classmethod
     def VALIDATE_INPUTS(cls, caption_file, replacements=None):
         try:
-            path = _resolve_prompt_file(caption_file)
+            path = _resolve_caption_file(caption_file)
         except ValueError as e:
             return str(e)
-        if os.path.splitext(path)[1].lower() not in CAPTION_EXTENSIONS:
-            return f"Not a .csv or .parquet file: {caption_file}"
         if not os.path.isfile(path):
             return f"Caption file not found: input/{PROMPTS_SUBDIR}/{caption_file}"
+        in_prompts = folder_paths.is_within_directory(_prompts_dir(), path)
+        if in_prompts and os.path.splitext(path)[1].lower() not in CAPTION_EXTENSIONS:
+            return f"Not a .csv or .parquet file: {caption_file}"
         if replacements is not None:
             try:
                 parse_replacements(replacements)
