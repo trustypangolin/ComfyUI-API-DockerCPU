@@ -22,6 +22,9 @@ import { app } from "../../scripts/app.js";
 //   LLink.getReroutes(graph, link) is static; Reroute.linkIds is a Set.
 // - The stock "recently executed" flow (link._last_time) is not reused: it
 //   redraws origin -> target as one curve and ignores reroutes.
+// - A wire held by zip ties (zip_ties.js) is drawn as several pieces and .path
+//   keeps only the last; every piece is on ._zipTiePaths, so taps and the glow
+//   cover the whole wire.
 
 const SETTING_ENABLED = "DockerCPU.LinkChain.Enabled";
 const TAP_MAX_MOVE_PX = 6; // more movement than this is a pan/drag, not a tap
@@ -40,6 +43,12 @@ const chain = {
 };
 
 let hitCtx = null;
+
+// Every Path2D a link or reroute segment was drawn with last frame.
+function pathsOf(item) {
+    if (Array.isArray(item._zipTiePaths) && item._zipTiePaths.length) return item._zipTiePaths;
+    return item.path instanceof Path2D ? [item.path] : [];
+}
 
 function typeKeys(type) {
     return String(type ?? "*")
@@ -129,7 +138,7 @@ function linkIdsAt(canvas, x, y) {
     const ctx = getHitCtx();
     ctx.lineWidth = Math.max((canvas.connections_width ?? 3) + 7, HIT_TOLERANCE_PX / (canvas.ds?.scale || 1));
     for (const seg of canvas.renderedPaths ?? []) {
-        if (!(seg.path instanceof Path2D) || !ctx.isPointInStroke(seg.path, x, y)) continue;
+        if (!pathsOf(seg).some((p) => ctx.isPointInStroke(p, x, y))) continue;
         if (seg.linkIds instanceof Set) return [...seg.linkIds]; // reroute: every link through it
         if (seg.origin_id != null) return [seg.id];
     }
@@ -179,9 +188,9 @@ function drawChainLinks(canvas, ctx) {
     for (const id of chain.linkIds) {
         const link = graph.getLink(id);
         if (!link) continue;
-        if (link.path instanceof Path2D && drawn.has(link)) paths.add(link.path);
+        if (drawn.has(link)) for (const p of pathsOf(link)) paths.add(p);
         for (const reroute of link.constructor?.getReroutes?.(graph, link) ?? []) {
-            if (reroute.path instanceof Path2D && drawn.has(reroute)) paths.add(reroute.path);
+            if (drawn.has(reroute)) for (const p of pathsOf(reroute)) paths.add(p);
         }
     }
     if (!paths.size) return;
@@ -281,8 +290,12 @@ function installPointer(canvas) {
 }
 
 function installDrawing(canvas) {
-    const drawConnections = canvas.drawConnections;
+    // Extensions load concurrently, so another one (zip_ties.js) may wrap the
+    // prototype's drawConnections after this runs: look it up at call time
+    // rather than keeping the one present now.
+    const own = Object.hasOwn(canvas, "drawConnections") ? canvas.drawConnections : null;
     canvas.drawConnections = function (ctx, ...rest) {
+        const drawConnections = own ?? Object.getPrototypeOf(this).drawConnections;
         const result = drawConnections.call(this, ctx, ...rest);
         try {
             drawChainLinks(this, ctx);

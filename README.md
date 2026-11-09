@@ -226,6 +226,12 @@ Palm rejection: **Settings → DockerCPU → Pencil → Ignore finger touches** 
 
 Tap or click the body of any link (not its centre dot, which keeps its menu) to animate the whole chain that link belongs to: a pulsing glow in the link's colour with white dashes running from source to destination, along reroutes, plus outlines on every node in the chain (`SOURCE` and `END` labelled). The chain follows the link's type through nodes: upstream through inputs of the same type, downstream through outputs of the same type, so `Load Image → Upscale → Sharpen → VAE Encode` lights up end to end and stops at VAE Encode (IMAGE in, LATENT out). `*` slots such as legacy Reroute nodes pass the type through; Set/Get-style virtual links aren't followed. Tap the same link again, tap empty canvas or press Esc to clear; Shift/Alt drags on links work as before. Turn it off in **Settings → DockerCPU → Links**. Classic canvas; with Nodes 2.0 the links animate but node outlines are skipped. See [web/link_chain.js](web/link_chain.js).
 
+### Zip Ties
+
+Bundle wires into a ribbon held by small zip ties, ported from [comfyui-zip-ties](https://github.com/safzanpirani/comfyui-zip-ties) 0.4.0 by Safzan Pirani (MIT; licence in [licenses/comfyui-zip-ties-LICENSE.txt](licenses/comfyui-zip-ties-LICENSE.txt)). Hold `Z` and drag a line across wires to tie them, or across a tie to remove it; without a keyboard, right-click empty canvas → **Tie wires**, then drag. Drag a tie to move it, Shift-drag to rotate it (15° steps, Alt for free rotation), right-click it for colour / rotate 90° or 45° / remove, double-click it to remove it. Ties select, move and delete with nodes, copy and paste with them, follow wires through reroutes, and undo with the graph. They're saved in the workflow's `extra.zipTies` - the same key as upstream, so workflows move between the two - and a workflow opened without the extension draws its wires normally.
+
+Turn it on and off with **Settings → DockerCPU → Zip Ties → Enable zip ties** (on by default). While off, ties already in a workflow are kept but not drawn and the `Z` gesture does nothing; they come back when it's on again. The same section sets the colour of new ties (random, match wires, grey) and the key to hold (Z, X, C, G, T or Y). If the upstream comfyui-zip-ties is also installed, this copy stays off and leaves ties to it. Tapping a tied wire with Link Chain Highlight lights up every piece of the ribbon. See [web/zip_ties.js](web/zip_ties.js).
+
 ## Supported Models
 
 ### Replicate Models

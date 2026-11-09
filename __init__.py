@@ -160,6 +160,17 @@ if not _is_test_context():
         LOCAL_LLM_NODE_CLASS_MAPPINGS = {}
         LOCAL_LLM_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+    # Amazon Bedrock (AWS profile / IAM Roles Anywhere auth)
+    try:
+        from .API.Bedrock import (
+            NODE_CLASS_MAPPINGS as BEDROCK_NODE_CLASS_MAPPINGS,
+            NODE_DISPLAY_NAME_MAPPINGS as BEDROCK_NODE_DISPLAY_NAME_MAPPINGS,
+        )
+        NODE_DISPLAY_NAME_MAPPINGS.update(BEDROCK_NODE_DISPLAY_NAME_MAPPINGS)
+    except Exception as e:
+        print(f"[ComfyUI-API-DockerCPU] Warning: Could not load Bedrock nodes: {e}")
+        BEDROCK_NODE_CLASS_MAPPINGS = {}
+
     # Load pipeline I/O and face nodes; each module is optional so one failing
     # import (e.g. onnxruntime or comfy_extras missing) doesn't hide the others
     import importlib
@@ -184,6 +195,7 @@ if not _is_test_context():
     NODE_CLASS_MAPPINGS.update(TEXT_SAVER_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(LOCAL_LLM_NODE_CLASS_MAPPINGS)
     NODE_CLASS_MAPPINGS.update(PIPELINE_NODE_CLASS_MAPPINGS)
+    NODE_CLASS_MAPPINGS.update(BEDROCK_NODE_CLASS_MAPPINGS)
 
     # Display loaded nodes
     if NODE_CLASS_MAPPINGS:
@@ -197,6 +209,7 @@ if not _is_test_context():
         print(f"  - Text Saver: {len(TEXT_SAVER_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Local LLM: {len(LOCAL_LLM_NODE_CLASS_MAPPINGS)} nodes")
         print(f"  - Pipeline I/O & Face: {len(PIPELINE_NODE_CLASS_MAPPINGS)} nodes")
+        print(f"  - Bedrock: {len(BEDROCK_NODE_CLASS_MAPPINGS)} nodes")
     else:
         print("[ComfyUI-API-DockerCPU] Warning: No nodes loaded. Check schema files.")
     
