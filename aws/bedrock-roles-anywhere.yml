@@ -1,0 +1,284 @@
+---
+#====================================================================================================
+# Description : IAM Roles Anywhere access to Amazon Bedrock inference for ComfyUI (X.509 cert auth)
+# Author      : Benjamin Luton
+# Date        : 2026-11-04
+# Version     : 1.0.0
+# Prerequisite: CA + client certificate from `aws/rolesanywhere.sh certs` (~/.aws/certs/comfyui-bedrock/)
+#
+# CACertificateBody is the CA certificate's base64 on ONE line (no BEGIN/END, spaces or line
+# breaks), so it can be pasted into the CloudFormation console. Print it with:
+#   ./rolesanywhere.sh body
+#
+# Deploy (normally via `aws/rolesanywhere.sh deploy`, which passes the CA for you):
+# aws cloudformation deploy --profile <admin-profile> --region <region> \
+#                    --stack-name comfyui-bedrock-rolesanywhere \
+#                    --template-file bedrock-roles-anywhere.yml \
+#                    --capabilities CAPABILITY_NAMED_IAM \
+#                    --parameter-overrides "CACertificateBody=$(grep -v CERTIFICATE ca.pem | tr -d '\r\n')"
+#
+# Region notes:
+#   Roles Anywhere (trust anchor + profile) is regional: it lives in the region you deploy to and
+#   aws_signing_helper talks to that region's endpoint. The STS credentials it returns are global,
+#   and the IAM policies below have no region condition, so Bedrock can be called in ANY region,
+#   including cross-region (us./eu./apac./...) and global. inference profiles.
+#   An Organizations SCP that denies regions still applies on top of this.
+#
+# Client side (~/.aws/config), written by `aws/rolesanywhere.sh config`:
+#   [profile comfyui-bedrock]
+#   credential_process = aws_signing_helper credential-process --certificate <client.pem>
+#       --private-key <client.key> --trust-anchor-arn <TrustAnchorArn> --profile-arn <ProfileArn>
+#       --role-arn <BedrockInferenceRoleArn>        (all on ONE line)
+#   region = us-east-1
+#====================================================================================================
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'IAM Roles Anywhere - ComfyUI Bedrock inference - all Bedrock regions'
+
+#====================================================================================================
+#                                             Parameters
+#====================================================================================================
+Parameters:
+  CACertificateBody:
+    Description: >-
+      Base64 body of ca.pem on ONE line - no BEGIN/END lines, no spaces, no line breaks.
+      Get it with: ./rolesanywhere.sh body   (or: grep -v CERTIFICATE ca.pem | tr -d '\r\n')
+    Type: String
+    MinLength: 200
+    AllowedPattern: '^[A-Za-z0-9+/]+={0,2}$'
+    ConstraintDescription: >-
+      Paste only the base64 between the BEGIN/END CERTIFICATE lines, joined into one line with no
+      spaces or line breaks (./rolesanywhere.sh body prints it)
+
+  ClientCertificateCN:
+    Description: Common Name (CN) of the client certificate(s) permitted to assume the roles
+    Type: String
+    Default: 'comfyui-bedrock'
+
+  NamePrefix:
+    Description: Prefix for the trust anchor, profile and role names
+    Type: String
+    Default: 'ComfyUIBedrock'
+    AllowedPattern: '^[A-Za-z0-9+=,.@_-]{1,40}$'
+
+  SessionDurationSeconds:
+    Description: Roles Anywhere session duration (botocore refreshes credential_process creds automatically)
+    Type: Number
+    Default: 3600
+    MinValue: 900
+    MaxValue: 43200
+
+  AllowMarketplaceSubscribe:
+    Description: Let the inference role make the one-time Marketplace subscription a third-party model needs on first invoke
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+
+  IncludeReadOnlyRole:
+    Description: Also create an account-wide read-only role (AWS managed ReadOnlyAccess) for general tooling such as MCP servers
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+
+  IncludeModelManagementRole:
+    Description: Also create a role that can manage model access, custom/imported models and provisioned throughput
+    Type: String
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+
+#====================================================================================================
+#                                             Conditions
+#====================================================================================================
+Conditions:
+  CreateManagementRole: !Equals [ !Ref IncludeModelManagementRole, 'True' ]
+  AllowSubscribe: !Equals [ !Ref AllowMarketplaceSubscribe, 'True' ]
+  CreateReadOnlyRole: !Equals [ !Ref IncludeReadOnlyRole, 'True' ]
+
+#====================================================================================================
+#                                             Resources
+#====================================================================================================
+Resources:
+
+#--------------------------------------------------------------------------------------------------
+  TrustAnchor:
+#--------------------------------------------------------------------------------------------------
+    Type: "AWS::RolesAnywhere::TrustAnchor"
+    Properties:
+      Name: !Sub "${NamePrefix}TrustAnchor"
+      Enabled: true
+      Source:
+        SourceType: "CERTIFICATE_BUNDLE"
+        SourceData:
+          # PEM rebuilt from the one-line body ("\n" in a double-quoted YAML string is a real newline)
+          X509CertificateData: !Sub "-----BEGIN CERTIFICATE-----\n${CACertificateBody}\n-----END CERTIFICATE-----\n"
+
+#--------------------------------------------------------------------------------------------------
+  BedrockInferenceRole:
+#--------------------------------------------------------------------------------------------------
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${NamePrefix}InferenceRA"
+      Description: Bedrock model inference from ComfyUI via IAM Roles Anywhere (any region)
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "rolesanywhere.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:TagSession"
+              - "sts:SetSourceIdentity"
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt TrustAnchor.TrustAnchorArn
+              StringEquals:
+                aws:PrincipalTag/x509Subject/CN: !Ref ClientCertificateCN
+      MaxSessionDuration: 43200
+      Path: "/"
+      Policies:
+        - PolicyName: BedrockInferenceAnyRegion
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Converse uses bedrock:InvokeModel; ConverseStream uses InvokeModelWithResponseStream.
+              # Resource "*" with no aws:RequestedRegion condition = every region, every model type
+              # (foundation models, cross-region/global inference profiles, application inference
+              # profiles, provisioned/imported/custom models, prompt-router).
+              - Sid: InvokeAnyModelAnyRegion
+                Effect: Allow
+                Action:
+                  - "bedrock:InvokeModel"
+                  - "bedrock:InvokeModelWithResponseStream"
+                  - "bedrock:GetAsyncInvoke"
+                  - "bedrock:ListAsyncInvokes"
+                  - "bedrock:CountTokens"
+                  - "bedrock:ApplyGuardrail"
+                Resource: "*"
+              # Lets the ComfyUI node populate its model dropdown
+              - Sid: DiscoverModels
+                Effect: Allow
+                Action:
+                  - "bedrock:ListFoundationModels"
+                  - "bedrock:GetFoundationModel"
+                  - "bedrock:GetFoundationModelAvailability"
+                  - "bedrock:ListInferenceProfiles"
+                  - "bedrock:GetInferenceProfile"
+                  - "bedrock:ListCustomModels"
+                  - "bedrock:ListImportedModels"
+                  - "bedrock:ListProvisionedModelThroughputs"
+                  - "bedrock:ListPromptRouters"
+                  - "bedrock:GetPromptRouter"
+                Resource: "*"
+              - Sid: MarketplaceViewSubscriptions
+                Effect: Allow
+                Action:
+                  - "aws-marketplace:ViewSubscriptions"
+                Resource: "*"
+        # Serverless third-party models (Anthropic, Meta, Mistral, ...) are enabled by a Marketplace
+        # subscription made on the account's FIRST invoke of that model. The caller needs Subscribe
+        # for that first call; afterwards it is not used. Set AllowMarketplaceSubscribe=False once
+        # the models you want have been invoked (or enabled by an admin) to drop it.
+        - !If
+          - AllowSubscribe
+          - PolicyName: BedrockMarketplaceFirstUse
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Sid: MarketplaceSubscribeForBedrockModels
+                  Effect: Allow
+                  Action:
+                    - "aws-marketplace:Subscribe"
+                  Resource: "*"
+          - !Ref "AWS::NoValue"
+
+#--------------------------------------------------------------------------------------------------
+  BedrockManagementRole:
+#--------------------------------------------------------------------------------------------------
+    Type: "AWS::IAM::Role"
+    Condition: CreateManagementRole
+    Properties:
+      RoleName: !Sub "${NamePrefix}ManagementRA"
+      Description: Bedrock model access/management via IAM Roles Anywhere (any region)
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "rolesanywhere.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:TagSession"
+              - "sts:SetSourceIdentity"
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt TrustAnchor.TrustAnchorArn
+              StringEquals:
+                aws:PrincipalTag/x509Subject/CN: !Ref ClientCertificateCN
+      MaxSessionDuration: 43200
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+
+#--------------------------------------------------------------------------------------------------
+  ReadOnlyRole:
+#--------------------------------------------------------------------------------------------------
+    Type: "AWS::IAM::Role"
+    Condition: CreateReadOnlyRole
+    Properties:
+      RoleName: !Sub "${NamePrefix}ReadOnlyRA"
+      Description: Account-wide read-only access via IAM Roles Anywhere (MCP servers, inspection)
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "rolesanywhere.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:TagSession"
+              - "sts:SetSourceIdentity"
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt TrustAnchor.TrustAnchorArn
+              StringEquals:
+                aws:PrincipalTag/x509Subject/CN: !Ref ClientCertificateCN
+      MaxSessionDuration: 43200
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+#--------------------------------------------------------------------------------------------------
+  RolesAnywhereProfile:
+#--------------------------------------------------------------------------------------------------
+    Type: "AWS::RolesAnywhere::Profile"
+    Properties:
+      Name: !Sub "${NamePrefix}Profile"
+      Enabled: true
+      DurationSeconds: !Ref SessionDurationSeconds
+      RoleArns:
+        - !GetAtt BedrockInferenceRole.Arn
+        - !If [ CreateManagementRole, !GetAtt BedrockManagementRole.Arn, !Ref "AWS::NoValue" ]
+        - !If [ CreateReadOnlyRole, !GetAtt ReadOnlyRole.Arn, !Ref "AWS::NoValue" ]
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  TrustAnchorArn:
+    Value: !GetAtt TrustAnchor.TrustAnchorArn
+  ProfileArn:
+    Value: !GetAtt RolesAnywhereProfile.ProfileArn
+  BedrockInferenceRoleArn:
+    Value: !GetAtt BedrockInferenceRole.Arn
+  BedrockManagementRoleArn:
+    Condition: CreateManagementRole
+    Value: !GetAtt BedrockManagementRole.Arn
+  ReadOnlyRoleArn:
+    Condition: CreateReadOnlyRole
+    Value: !GetAtt ReadOnlyRole.Arn
