@@ -182,6 +182,12 @@ Available in category: `🎨 DockerCPU API/Utilities`
 - **Load Prompt From File** - Pick a `.txt` file under `input/prompts/` (subfolders included, alphabetical) from a dropdown; outputs its `text`
   - `reload`: `if file changed` (default) re-reads after you edit the file; `if value changed` only when another file is picked. Press R in ComfyUI to refresh the list
   - Subfolders show as `📁` submenus at every depth (`web/prompt_loader.js`, classic canvas only)
+- **Load Caption Prompt (CSV / Parquet)** - Picks one caption from a `.csv` or `.parquet` table under `input/prompts/` (e.g. `captions-2.csv`) and swaps keywords for trigger words
+  - `replacements`: one `find = replace` per line, e.g. `Alice = ohwx woman`, `Bella = sks woman`; empty right-hand side removes the word, `#` lines are ignored. All lines apply in one pass (so `Alice = Bella` / `Bella = Alice` swaps), longest match first. `whole_word` (default on) matches `Alice's` but not `Alicent`; `case_sensitive` (default on)
+  - `index` picks a row among those left after filtering and wraps around; set its control to `increment` to walk the table or `randomize` for a random caption
+  - Filters (all optional, default = off): `contains` / `exclude` (comma-separated caption terms; e.g. exclude `Bella, Adam` for solo shots), `aspect_ratio`, `nudity` (`none` = empty cell), `location` (comma-separated), `max_people` (Males + Females), `min_artistic_quality`, `max_erotic_score`, `max_pornographic_score`. A filter on a column the table lacks is an error
+  - Outputs: `prompt` (after replacements), `original`, `aspect_ratio`, `width` / `height` (that ratio at `megapixels`, multiples of 16), `row` (0-based row in the file), `count` (rows after filtering), `metadata` (the row's other columns as JSON)
+  - The table is cached in memory until the file changes; `.parquet` needs `pyarrow` (or `pandas`). `caption_column` (default `Caption`) for tables with another column name
 - **Save Image With Filename** - Writes `output/<stage>/<mirror_dir>/<stem><suffix>.png` with no counter (`_00`, `_01`, ... for batches > 1)
   - `if_exists`: `error` (default) / `overwrite` / `skip`. Embeds prompt and workflow like Save Image
   - Always writes the PNG text key `restore`: `extra_metadata` (a JSON object, or `{}`) plus `"schema": 1`, `"original"`, `"original_sha256"` from the optional `original` / `original_sha256` inputs (wire the loader's `ORIGINAL` / `ORIGINAL_SHA256`; empty or unconnected → `null`, and they override the same keys in `extra_metadata`)
@@ -298,7 +304,7 @@ ComfyUI-API-DockerCPU/
 │   ├── amd_tools.py                 # AMD GPU patch
 │   ├── image_utils.py               # Load Image With Metadata
 │   ├── provenance.py                # ORIGINAL / ORIGINAL_SHA256 resolution
-│   ├── prompt_loader.py             # Load Prompt From File
+│   ├── prompt_loader.py             # Load Prompt From File, Load Caption Prompt
 │   └── text_saver.py                # Save Text With Filename
 │
 ├── schemas/                         # API schema definitions

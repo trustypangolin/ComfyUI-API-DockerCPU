@@ -6,8 +6,8 @@ import { app } from "../../scripts/app.js";
 // than its threshold (20), and only one level for short subfolders.
 // Classic (LiteGraph) canvas only; the Vue nodes dropdown is unchanged.
 
-const NODE_CLASS = "LoadPromptFromFile";
-const WIDGET_NAME = "prompt_file";
+// node class -> the widget holding its file path
+const FILE_WIDGETS = { LoadPromptFromFile: "prompt_file", LoadCaptionPrompt: "caption_file" };
 
 const promptWidgets = new Set();
 
@@ -50,8 +50,9 @@ function toEntries(level, pick) {
 app.registerExtension({
     name: "DockerCPU.PromptLoaderFolders",
     nodeCreated(node) {
-        if (node.comfyClass !== NODE_CLASS) return;
-        const widget = node.widgets?.find((w) => w.name === WIDGET_NAME);
+        const widgetName = FILE_WIDGETS[node.comfyClass];
+        if (!widgetName) return;
+        const widget = node.widgets?.find((w) => w.name === widgetName);
         if (widget) promptWidgets.add(widget);
         const onRemoved = node.onRemoved;
         node.onRemoved = function () {
